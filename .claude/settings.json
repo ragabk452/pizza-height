@@ -19,7 +19,9 @@
       "Bash(docker exec *)",
       "Bash(git config *)",
       "Bash(echo \"   Name:  $\\(git config --global user.name\\)\")",
-      "Bash(echo \"   Email: $\\(git config --global user.email\\)\")"
+      "Bash(echo \"   Email: $\\(git config --global user.email\\)\")",
+      "Bash(rm -rf apps/api/dist apps/web/.next apps/admin/.next .turbo apps/*/.turbo packages/*/.turbo)",
+      "Bash(rm -f /tmp/api-test.log /tmp/web-test.log /tmp/admin-test.log)"
     ],
     "additionalDirectories": ["/Users/ragab1512/Documents/KAREEM/مبرمج/Requests"]
   }

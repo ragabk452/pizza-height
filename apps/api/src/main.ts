@@ -17,4 +17,4 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🍕 Pizza Height API running on http://localhost:${port}/api/v1`);
 }
-bootstrap();
+void bootstrap();
