@@ -1,0 +1,16 @@
+{
+  "name": "@pizza-height/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared configuration (Tailwind, TypeScript, ESLint) for Pizza Height",
+  "main": "./index.js",
+  "exports": {
+    "./tailwind": "./tailwind/index.ts",
+    "./typescript/base": "./typescript/base.json",
+    "./typescript/nextjs": "./typescript/nextjs.json",
+    "./typescript/nestjs": "./typescript/nestjs.json"
+  },
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules"
+  }
+}
