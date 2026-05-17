@@ -17,65 +17,135 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// Stable Unsplash photo IDs — luxury food photography
+/**
+ * AI-generated food images via Pollinations.ai — free, no API key, and every URL
+ * is guaranteed to match the item description (because the URL *is* the prompt).
+ * Each prompt is tuned for moody, restaurant-grade food photography.
+ */
+function img(prompt: string, seed: number) {
+  const encoded = encodeURIComponent(
+    `${prompt}, professional food photography, dark moody luxury restaurant background, ` +
+      `top-down angle, shallow depth of field, ultra realistic, 8k`,
+  );
+  return `https://image.pollinations.ai/prompt/${encoded}?width=800&height=800&seed=${seed}&nologo=true&model=flux`;
+}
+
 const IMG = {
-  hero: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80&fm=jpg',
-  margherita:
-    'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80&fm=jpg',
-  pepperoni:
-    'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&fm=jpg',
-  truffle:
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80&fm=jpg',
-  quattroFormaggi:
-    'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=800&q=80&fm=jpg',
-  diavola:
-    'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=800&q=80&fm=jpg',
-  burrata:
-    'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=800&q=80&fm=jpg',
-  funghi:
-    'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=800&q=80&fm=jpg',
-  vegana:
-    'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?w=800&q=80&fm=jpg',
-  hawaiian:
-    'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80&fm=jpg',
-  bbq: 'https://images.unsplash.com/photo-1593504049359-74330189a345?w=800&q=80&fm=jpg',
+  // Pizzas
+  margherita: img(
+    'Authentic Margherita pizza, fresh basil leaves, melted buffalo mozzarella, San Marzano tomato sauce, wood-fired crust',
+    101,
+  ),
+  pepperoni: img(
+    'Pepperoni pizza with crispy edges, melted mozzarella, herb garnish',
+    102,
+  ),
+  truffle: img(
+    'White truffle pizza with shaved black truffle, ricotta, mozzarella, wild mushrooms',
+    103,
+  ),
+  quattroFormaggi: img(
+    'Four-cheese pizza, gorgonzola parmigiano taleggio mozzarella, caramelized walnuts',
+    104,
+  ),
+  diavola: img(
+    'Spicy diavola pizza, red salami, calabrian chili peppers, mozzarella, oregano',
+    105,
+  ),
+  burrata: img(
+    'Pizza topped with creamy burrata cheese, prosciutto di parma, fresh arugula',
+    106,
+  ),
+  funghi: img(
+    'Wild mushroom pizza, taleggio, fontina cheese, fresh thyme, garlic oil',
+    107,
+  ),
+  vegana: img(
+    'Vegan pizza with roasted peppers, zucchini, eggplant, vegan cheese, basil pesto',
+    108,
+  ),
+  hawaiian: img(
+    'Gourmet hawaiian pizza with smoked ham, fire-roasted pineapple, jalapeno, cilantro',
+    109,
+  ),
+  bbq: img(
+    'BBQ chicken pizza with red onion, smoked chicken, sweet corn, cilantro, smoky barbecue sauce',
+    110,
+  ),
 
-  caesar:
-    'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=800&q=80&fm=jpg',
-  caprese:
-    'https://images.unsplash.com/photo-1608032077018-c9aad9565d29?w=800&q=80&fm=jpg',
-  arugula:
-    'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?w=800&q=80&fm=jpg',
+  // Salads
+  caesar: img(
+    'Caesar salad with crisp romaine, parmigiano shavings, anchovy, garlic croutons',
+    201,
+  ),
+  caprese: img(
+    'Caprese salad with buffalo mozzarella, heirloom tomato, fresh basil, balsamic glaze',
+    202,
+  ),
+  arugula: img(
+    'Arugula salad with poached pear, gorgonzola cheese, candied walnuts, honey vinaigrette',
+    203,
+  ),
 
-  redWine:
-    'https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=800&q=80&fm=jpg',
-  whiteWine:
-    'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800&q=80&fm=jpg',
-  prosecco:
-    'https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=800&q=80&fm=jpg',
+  // Wines
+  redWine: img(
+    'Glass of red Chianti wine, italian restaurant table setting',
+    301,
+  ),
+  whiteWine: img(
+    'Glass of white pinot grigio wine with condensation, italian dinner setting',
+    302,
+  ),
+  prosecco: img(
+    'Glass of sparkling prosecco wine with bubbles, italian celebration',
+    303,
+  ),
 
-  bruschetta:
-    'https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=800&q=80&fm=jpg',
-  arancini:
-    'https://images.unsplash.com/photo-1571066811602-716837d681de?w=800&q=80&fm=jpg',
-  prosciutto:
-    'https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=800&q=80&fm=jpg',
+  // Antipasti
+  bruschetta: img(
+    'Italian bruschetta trio, tomato basil topping, white bean rosemary, sauteed mushroom',
+    401,
+  ),
+  arancini: img(
+    'Sicilian arancini saffron risotto balls, golden crispy, marinara dipping sauce',
+    402,
+  ),
+  prosciutto: img(
+    'Prosciutto di parma with ripe cantaloupe melon, mint leaves, balsamic pearls',
+    403,
+  ),
 
-  wings:
-    'https://images.unsplash.com/photo-1608039755401-742074f0548d?w=800&q=80&fm=jpg',
-  garlicBread:
-    'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=800&q=80&fm=jpg',
-  mozzarellaSticks:
-    'https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=800&q=80&fm=jpg',
+  // Wings & Sides
+  wings: img(
+    'Crispy buffalo chicken wings, buffalo glaze, blue cheese dip, celery sticks',
+    501,
+  ),
+  garlicBread: img(
+    'Wood-fired garlic bread with melted mozzarella cheese, roasted garlic butter, fresh parsley',
+    502,
+  ),
+  mozzarellaSticks: img(
+    'Golden crispy mozzarella sticks with marinara dipping sauce, parmesan crust',
+    503,
+  ),
 
-  tiramisu:
-    'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800&q=80&fm=jpg',
-  cannoli:
-    'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=800&q=80&fm=jpg',
-  espresso:
-    'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=800&q=80&fm=jpg',
-  affogato:
-    'https://images.unsplash.com/photo-1593504049359-74330189a345?w=800&q=80&fm=jpg',
+  // Desserts
+  tiramisu: img(
+    'Classic italian tiramisu, mascarpone cream, cocoa powder dust, espresso-soaked ladyfingers',
+    601,
+  ),
+  cannoli: img(
+    'Sicilian cannoli pastry, sweet ricotta filling, candied orange, crushed pistachios',
+    602,
+  ),
+  espresso: img(
+    'Double espresso doppio in italian ceramic cup, perfect crema, dark moody',
+    603,
+  ),
+  affogato: img(
+    'Affogato al caffe, vanilla gelato ice cream drowned in fresh espresso, italian glass',
+    604,
+  ),
 };
 
 async function main() {
