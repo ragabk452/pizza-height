@@ -1,6 +1,6 @@
 import type { MenuItem, Category } from '@/lib/api-types';
+import { SITE_URL } from '@/lib/site-url';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pizza-height.vercel.app';
 const SITE_NAME = 'Pizza Height';
 
 function JsonLd({ data }: { data: Record<string, unknown> }) {
@@ -100,11 +100,11 @@ export function WebsiteJsonLd() {
 }
 
 export function MenuJsonLd({ categories, items }: { categories: Category[]; items: MenuItem[] }) {
-  const sections = categories
-    .map((cat) => {
-      const sectionItems = items.filter((item) => item.categoryId === cat.id);
-      if (sectionItems.length === 0) return null;
-      return {
+  const sections = categories.flatMap((cat) => {
+    const sectionItems = items.filter((item) => item.categoryId === cat.id);
+    if (sectionItems.length === 0) return [];
+    return [
+      {
         '@type': 'MenuSection',
         name: cat.name,
         description: cat.description ?? undefined,
@@ -122,9 +122,9 @@ export function MenuJsonLd({ categories, items }: { categories: Category[]; item
               : 'https://schema.org/OutOfStock',
           },
         })),
-      };
-    })
-    .filter(Boolean);
+      },
+    ];
+  });
 
   return (
     <JsonLd

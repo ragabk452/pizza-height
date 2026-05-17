@@ -188,9 +188,9 @@ export default function CheckoutPage() {
 
   if (!hydrated || !cartHydrated || !customer || items.length === 0) {
     return (
-      <div className="bg-mesh-gold grid min-h-screen place-items-center">
+      <main id="main-content" className="bg-mesh-gold grid min-h-screen place-items-center">
         <Loader2 className="text-primary animate-spin" />
-      </div>
+      </main>
     );
   }
 

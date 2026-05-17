@@ -77,9 +77,9 @@ packages/
 
 ---
 
-## 4. الـ Sprints المنجزة (0 → 7)
+## 4. الـ Sprints المنجزة (0 → 8)
 
-> الـ Sprints 0→3 ملخصها هنا. Sprints 4→7 details + post-sprint audits في **قسم 5**.
+> الـ Sprints 0→3 ملخصها هنا. Sprints 4→8 details + post-sprint audits في **قسم 5**.
 
 ### ✅ Sprint 0 — Setup & Foundation
 - Turborepo monorepo (Mono-repo اختياره)
@@ -418,31 +418,24 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 8: Polish, SEO, Deploy
+## 🚀 الخطوة التالية — Sprint 9: Deploy + Admin completionist
 
 ### المحتوى المخطط
 
-**Polish & SEO:**
-- Open Graph + Twitter cards بصورة hero للمطعم.
-- Sitemap + robots.txt.
-- Structured data (Restaurant + Menu schema.org JSON-LD).
-- Performance audit: bundle analyzer، image lazy-load، font subset.
-- A11y audit: ARIA على كل interactive element، focus traps في الـ drawers، keyboard nav كاملة.
-- Production hardening: helmet CSP غير `false`، rate-limit على login/register (مؤجلة من Sprint 5 audit)، error message stripping في prod.
-
-**Deploy:**
-- Vercel للـ web + admin (free tier).
-- Railway / Render للـ API (free tier + Postgres + Redis).
-- Production secrets setup + CORS origins للـ deployed URLs.
+**Deploy (الجزء اللي تأجل من Sprint 8):**
+- Vercel للـ web + admin (free tier). الـ `vercel.json` في كل app جاهز — بس محتاج user يـ create Vercel projects بـ Root Directory = apps/web و apps/admin.
+- Railway للـ API + Postgres + Redis (free tier $5/month credit). الـ `Dockerfile` + `railway.toml` جاهزين — Railway هيـ pick them up تلقائياً.
+- Production secrets setup (راجع `apps/{web,admin,api}/.env.production.example`). أهم نقطة: `NEXT_PUBLIC_APP_URL` لازم يتعـط في Vercel وإلا الـ build هيـ throw (راجع `apps/web/src/lib/site-url.ts`).
+- CORS origins للـ deployed URLs (في API `CORS_ORIGINS` env var).
 - Custom domain (لو متاح) + README بـ live demo links.
 
-**Admin completionist work (parallel — لو الوقت سمح):**
-- Admin: Menu CRUD UI (Sprint 5 wireframed the read-only menu; this adds create/edit/delete + size + modifier nesting + sold-out toggle).
-- Admin: Settings editor (read-only viewer موجود؛ الـ editor محتاج allowlist + per-key validation).
-- Admin: Customer detail drawer (الـ `useCustomerDetail` hook موجود ومش متستعمل).
+**Admin completionist work:**
+- Menu CRUD UI (Sprint 5 wireframed the read-only menu; this adds create/edit/delete + size + modifier nesting + sold-out toggle).
+- Settings editor (read-only viewer موجود؛ الـ editor محتاج allowlist + per-key validation).
+- Customer detail drawer (الـ `useCustomerDetail` hook موجود ومش متستعمل).
 
 ### قبل البدء
-1. اقرأ هذا الملف بالكامل + قسم Sprint 5/6 details (قسم 5).
+1. اقرأ هذا الملف بالكامل + قسم Sprint 8 details (قسم 5).
 2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
 3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 

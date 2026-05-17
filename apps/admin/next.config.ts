@@ -11,13 +11,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
 
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-    ],
-    formats: ['image/avif', 'image/webp'],
-  },
+  // NOTE: admin uses plain <img> tags (read-only menu thumbnail etc).
+  // Add `images.remotePatterns` only when migrating to next/image.
 
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'sonner'],

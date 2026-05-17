@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { Category, MenuItem } from '@/lib/api-types';
 import { MenuJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
+import { SITE_URL } from '@/lib/site-url';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pizza-height.vercel.app';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export const metadata: Metadata = {

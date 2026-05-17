@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from 'next';
 import { DM_Serif_Display, Manrope, Cairo } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { MotionProvider } from '@/components/providers/motion-provider';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { RestaurantJsonLd, OrganizationJsonLd, WebsiteJsonLd } from '@/components/seo/json-ld';
+import { SITE_URL } from '@/lib/site-url';
 import { Toaster } from 'sonner';
 import './globals.css';
-
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pizza-height.vercel.app';
 
 const dmSerif = DM_Serif_Display({
   variable: '--font-dm-serif',
@@ -134,21 +134,23 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <QueryProvider>
-            {children}
-            <CartDrawer />
-            <Toaster
-              theme="dark"
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: 'var(--surface)',
-                  color: 'var(--foreground)',
-                  border: '1px solid var(--border)',
-                },
-              }}
-            />
-          </QueryProvider>
+          <MotionProvider>
+            <QueryProvider>
+              {children}
+              <CartDrawer />
+              <Toaster
+                theme="dark"
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    background: 'var(--surface)',
+                    color: 'var(--foreground)',
+                    border: '1px solid var(--border)',
+                  },
+                }}
+              />
+            </QueryProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

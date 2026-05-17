@@ -15,9 +15,9 @@ export default function MockPaymentPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-mesh-gold grid min-h-screen place-items-center">
+        <main id="main-content" className="bg-mesh-gold grid min-h-screen place-items-center">
           <Loader2 className="text-primary animate-spin" />
-        </div>
+        </main>
       }
     >
       <MockPaymentInner />
