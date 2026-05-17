@@ -60,7 +60,10 @@
       "Bash(mkdir -p apps/web/public/menu/categories)",
       "Bash(rm -rf apps/web/public/menu/items apps/web/public/menu/categories)",
       "Bash(ls apps/web/public/menu/)",
-      "Bash(rm -f apps/api/prisma/download-images.ts)"
+      "Bash(rm -f apps/api/prisma/download-images.ts)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(awk '{print \"    \" $1 \" \" $NF}')",
+      "Bash(docker volume *)"
     ],
     "additionalDirectories": [
       "/Users/ragab1512/Documents/KAREEM/مبرمج/Requests",

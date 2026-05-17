@@ -29,7 +29,11 @@ export class MenuItemsService {
         where: { OR: [{ id: query.category }, { slug: query.category }] },
         select: { id: true },
       });
-      if (cat) where.categoryId = cat.id;
+      // If the caller specified a category that doesn't exist, return zero
+      // items rather than silently ignoring the filter (which would return
+      // the entire menu and confuse the client).
+      if (!cat) return [];
+      where.categoryId = cat.id;
     }
 
     if (query.popular) {
