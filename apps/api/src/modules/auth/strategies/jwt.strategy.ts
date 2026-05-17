@@ -23,13 +23,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });
-      if (!user || !user.isActive)
+      if (!user || !user.isActive || user.deletedAt) {
         throw new UnauthorizedException('Account inactive or deleted');
+      }
     } else if (payload.type === 'customer') {
       const customer = await this.prisma.customer.findUnique({
         where: { id: payload.sub },
       });
-      if (!customer) throw new UnauthorizedException('Customer not found');
+      if (!customer || customer.deletedAt) {
+        throw new UnauthorizedException('Customer not found');
+      }
     }
     return payload;
   }

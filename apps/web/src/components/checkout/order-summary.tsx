@@ -14,6 +14,7 @@ import type { CouponPreview, OrderType } from '@/lib/api-types';
 interface OrderSummaryProps {
   type: OrderType;
   vatPercent: number;
+  serviceChargePercent: number;
   deliveryFeeBase: number;
   coupon: CouponPreview | null;
   onCouponChange: (coupon: CouponPreview | null) => void;
@@ -22,6 +23,7 @@ interface OrderSummaryProps {
 export function OrderSummary({
   type,
   vatPercent,
+  serviceChargePercent,
   deliveryFeeBase,
   coupon,
   onCouponChange,
@@ -43,17 +45,30 @@ export function OrderSummary({
       )
       .toFixed(2);
 
-    let discount = coupon?.discount ?? 0;
+    // Mirror the backend pricing model (apps/api/src/modules/orders/orders.service.ts):
+    //   - PERCENTAGE / FIXED coupons reduce the taxable base.
+    //   - FREE_DELIVERY zeros the delivery fee but does NOT reduce taxable.
+    //   - VAT and service charge both run on `taxable`.
+    // `coupon.discount` is the *displayed savings* — for FREE_DELIVERY it's
+    // the delivery fee value (so the UI can show "Discount -$5.00").
+    const foodDiscount = coupon?.freeDelivery ? 0 : (coupon?.discount ?? 0);
     let deliveryFee = type === 'DELIVERY' ? deliveryFeeBase : 0;
-    if (coupon?.freeDelivery) {
-      discount = deliveryFee;
-      deliveryFee = 0;
-    }
-    const taxable = Math.max(subtotal - discount, 0);
+    if (coupon?.freeDelivery) deliveryFee = 0;
+
+    const taxable = Math.max(subtotal - foodDiscount, 0);
     const vat = +(taxable * (vatPercent / 100)).toFixed(2);
-    const total = +(taxable + vat + deliveryFee).toFixed(2);
-    return { subtotal, discount, deliveryFee, vat, total };
-  }, [items, type, vatPercent, deliveryFeeBase, coupon]);
+    const serviceCharge = +(taxable * (serviceChargePercent / 100)).toFixed(2);
+    const displayDiscount = coupon?.discount ?? 0;
+    const total = +(taxable + vat + serviceCharge + deliveryFee).toFixed(2);
+    return {
+      subtotal,
+      discount: displayDiscount,
+      deliveryFee,
+      vat,
+      serviceCharge,
+      total,
+    };
+  }, [items, type, vatPercent, serviceChargePercent, deliveryFeeBase, coupon]);
 
   async function applyCoupon(e: React.FormEvent) {
     e.preventDefault();
@@ -168,6 +183,9 @@ export function OrderSummary({
         <Row label="Subtotal" value={totals.subtotal} />
         {totals.discount > 0 && <Row label="Discount" value={-totals.discount} accent />}
         <Row label={`VAT (${vatPercent}%)`} value={totals.vat} />
+        {totals.serviceCharge > 0 && (
+          <Row label={`Service (${serviceChargePercent}%)`} value={totals.serviceCharge} />
+        )}
         <Row
           label={type === 'DELIVERY' ? 'Delivery' : 'Service'}
           value={totals.deliveryFee}

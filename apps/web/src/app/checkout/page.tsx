@@ -117,6 +117,7 @@ export default function CheckoutPage() {
 
   const { data: settings } = useSettings();
   const vatPercent = settings?.['restaurant.vatPercent'] ?? 14;
+  const serviceChargePercent = settings?.['restaurant.serviceChargePercent'] ?? 0;
   const deliveryFee = settings?.['restaurant.defaultDeliveryFee'] ?? 5;
   const minOrder = settings?.['restaurant.minOrderAmount'] ?? 15;
 
@@ -340,7 +341,17 @@ export default function CheckoutPage() {
                             setPickedAddressId(id);
                             setShowAddressForm(false);
                           }}
-                          onCancel={() => setShowAddressForm(false)}
+                          // Cancel returns to the saved-address list if any
+                          // exist; if none exist there's nothing to fall back
+                          // to, so step back to "Type" instead of leaving the
+                          // user staring at the same empty form again.
+                          onCancel={() => {
+                            if ((addresses.data ?? []).length > 0) {
+                              setShowAddressForm(false);
+                            } else {
+                              setStep(0);
+                            }
+                          }}
                         />
                       </div>
                     ) : (
@@ -514,6 +525,7 @@ export default function CheckoutPage() {
           <OrderSummary
             type={type}
             vatPercent={vatPercent}
+            serviceChargePercent={serviceChargePercent}
             deliveryFeeBase={deliveryFee}
             coupon={coupon}
             onCouponChange={setCoupon}

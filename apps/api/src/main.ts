@@ -1,5 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
@@ -11,14 +12,17 @@ import { DecimalToNumberInterceptor } from './common/interceptors/decimal-to-num
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
+  const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api/v1');
 
   // Security
   app.use(helmet({ contentSecurityPolicy: false }));
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? [
+    origin: config.get<string[]>('corsOrigins') ?? [
       'http://localhost:3000',
       'http://localhost:3001',
     ],
@@ -57,6 +61,9 @@ async function bootstrap() {
     .addTag('Auth')
     .addTag('Categories')
     .addTag('Menu Items')
+    .addTag('Orders')
+    .addTag('Addresses')
+    .addTag('Coupons')
     .addTag('Settings')
     .addTag('Upload')
     .addTag('Health')
@@ -66,14 +73,11 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  const port = process.env.PORT ?? 4000;
+  const port = config.get<number>('port') ?? 4000;
   await app.listen(port);
 
-  console.log(`\n🍕 Pizza Height API ready:`);
-
-  console.log(`   → http://localhost:${port}/api/v1`);
-
-  console.log(`   → http://localhost:${port}/api/docs (Swagger)\n`);
+  logger.log(`🍕 Pizza Height API ready at http://localhost:${port}/api/v1`);
+  logger.log(`📚 Swagger at http://localhost:${port}/api/docs`);
 }
 
 void bootstrap();

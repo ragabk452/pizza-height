@@ -156,7 +156,9 @@ function ItemDetailsBody({ slug, onClose, onAddToCart }: BodyProps) {
         if (group.maxSelection === 1) {
           current.clear();
         }
-        if (current.size >= group.maxSelection) {
+        // `maxSelection === 0` is treated as "unlimited" (matches backend
+        // convention in orders.service.ts). Only enforce the cap when > 0.
+        if (group.maxSelection > 0 && current.size >= group.maxSelection) {
           return prev;
         }
         current.add(modifierId);

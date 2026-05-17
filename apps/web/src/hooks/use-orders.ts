@@ -20,10 +20,16 @@ export function useMyOrders() {
 }
 
 export function useOrder(id: string | undefined) {
+  // Gate the request on both an id AND the auth store finishing rehydration
+  // — otherwise on a hard refresh the query fires before localStorage has
+  // restored the access token, hits 401, the refresh-token is also missing,
+  // and the page is stuck on a permanent spinner.
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
   return useQuery({
     queryKey: KEYS.one(id ?? ''),
     queryFn: () => api<Order>(`/orders/${id}`),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && hydrated && isAuthed,
   });
 }
 

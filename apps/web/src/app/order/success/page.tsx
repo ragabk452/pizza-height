@@ -28,6 +28,13 @@ function SuccessInner() {
   const router = useRouter();
   const params = useSearchParams();
   const orderId = params.get('id') ?? undefined;
+  // Confetti is one-shot — unmount after the animation finishes so the 80
+  // absolutely-positioned spans (z-30) don't sit invisibly over the page.
+  const [showConfetti, setShowConfetti] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShowConfetti(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
   const { data: order, isLoading } = useOrder(orderId);
   // The ETA depends on the wall-clock; tick once a minute so it stays accurate
   // without re-rendering on every frame.
@@ -55,7 +62,7 @@ function SuccessInner() {
   return (
     <>
       <Navbar />
-      <Confetti />
+      {showConfetti && <Confetti />}
       <main className="bg-mesh-gold relative min-h-screen overflow-hidden pt-32 pb-24">
         <div className="mx-auto max-w-2xl px-6 text-center lg:px-8">
           <motion.div

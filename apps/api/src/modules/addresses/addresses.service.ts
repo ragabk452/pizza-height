@@ -46,10 +46,22 @@ export class AddressesService {
 
     return this.prisma.$transaction(async (tx) => {
       if (dto.isDefault === true && !address.isDefault) {
+        // Promoting this one — demote whatever was the default before.
         await tx.address.updateMany({
           where: { customerId, isDefault: true },
           data: { isDefault: false },
         });
+      } else if (
+        dto.isDefault === false &&
+        address.isDefault &&
+        !dto.isDefault
+      ) {
+        // Demoting the current default — refuse, since the customer would
+        // be left with no default address. They can promote a different
+        // one instead (which auto-demotes this one above).
+        throw new ForbiddenException(
+          'Cannot clear the default flag — promote another address instead',
+        );
       }
       return tx.address.update({ where: { id }, data: dto });
     });

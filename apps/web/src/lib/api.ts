@@ -52,10 +52,13 @@ async function tryRefresh(): Promise<string | null> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });
-      if (!res.ok) {
+      // Only sign the user out when the server *says* the token is bad.
+      // Transient failures (network blip, 502) shouldn't dump them mid-flow.
+      if (res.status === 401 || res.status === 403) {
         useAuthStore.getState().clear();
         return null;
       }
+      if (!res.ok) return null;
       const data = (await res.json()) as {
         accessToken: string;
         refreshToken: string;
@@ -63,7 +66,7 @@ async function tryRefresh(): Promise<string | null> {
       useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
       return data.accessToken;
     } catch {
-      useAuthStore.getState().clear();
+      // Network error — leave tokens intact, let the caller see the failure.
       return null;
     } finally {
       refreshInflight = null;

@@ -28,7 +28,12 @@ export function Navbar() {
     setScrolled(latest > 50);
   });
 
-  const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  // Read item count only after the persisted cart has rehydrated; otherwise
+  // SSR (empty) and the first client paint (restored) diverge and React
+  // throws a hydration warning + may discard server markup.
+  const itemCount = useCartStore((s) =>
+    s.hydrated ? s.items.reduce((sum, i) => sum + i.quantity, 0) : 0,
+  );
   const openCart = useUIStore((s) => s.openCart);
 
   return (

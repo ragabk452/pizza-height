@@ -98,7 +98,7 @@ packages/
 - Inline SVG icons للـ Instagram/Twitter/Facebook (lucide v1 شال brands)
 
 ### ✅ Sprint 2 — Database & Backend Core
-**Prisma Schema (18 models):**
+**Prisma Schema (17 models):**
 - Users, Customers, Addresses
 - Categories, MenuItems, ItemSizes, ModifierGroups, Modifiers
 - Orders, OrderItems, OrderItemModifiers, OrderStatusHistory
@@ -130,7 +130,7 @@ packages/
 - ValidationPipe (whitelist + forbidNonWhitelisted + transform)
 - ClassSerializerInterceptor + **DecimalToNumberInterceptor** (يحول كل Decimal لـ number recursively)
 - AllExceptionsFilter موحد
-- Swagger UI على `/api/docs` (16 endpoints, 6 tags)
+- Swagger UI على `/api/docs` (31 endpoints across 9 tags as of Sprint 4)
 - nestjs-pino logger (pino-pretty في dev)
 - Throttler (100 req/min default)
 - JwtAuthGuard كـ APP_GUARD (مع `@Public()` decorator)
@@ -157,7 +157,7 @@ packages/
 
 ---
 
-## 5. الـ Bugs المكتشفة والمصلحة (20 إجمالاً)
+## 5. الـ Bugs المكتشفة والمصلحة (20 من السبرنتات + ~25 من الـ post-Sprint-4 audit)
 
 | # | الـ Bug | الحل |
 |---|---------|------|
@@ -181,6 +181,29 @@ packages/
 | 18 | Image fix: arbitrary Unsplash IDs (garlic bread = portrait) | استبدلت IDs المعروف خطأها + غيرت affogato (كان duplicate لـ bbq) |
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
+
+**Post-Sprint-4 audit (2026-05-17) — additional fixes applied:**
+- FREE_DELIVERY coupon no longer reduces the taxable subtotal (was undercharging VAT by ~$0.70 on $50 orders). `couponUsage.discountApplied` now records the actual customer savings (food discount + waived delivery fee).
+- `OrderStatus` transitions now allow `CANCELLED` from `READY` and `OUT_FOR_DELIVERY` (real-ops scenarios like customer no-show or accident).
+- Disabled (`isAvailable=false`) modifiers are now rejected with a 400 instead of silently dropped — was letting customers satisfy required groups with unavailable items.
+- Soft-deleted or inactive categories block their items from being ordered.
+- Order-number generator wraps the create call in try/catch on `Prisma.P2002` so concurrent inserts retry instead of 500.
+- Realtime gateway: CORS uses `CORS_ORIGINS` (was `'*'`), staff rooms (`admin`/`kitchen`) refuse browser-side `join`, per-socket room cap = 20.
+- `POST /coupons/validate` now requires customer auth so `firstOrderOnly` / `maxUsesPerCustomer` apply at preview time (was bypassing them via `@Public()`).
+- JWT strategy rejects soft-deleted customers and staff.
+- `JWT_SECRET` / `JWT_REFRESH_SECRET` / `DATABASE_URL` throw at boot when `NODE_ENV=production` (no more silent fallback to `'change-me-in-production'`).
+- Frontend `useOrder` waits for auth-store rehydration → no more infinite-loader on hard-refresh of `/order/success` or `/order/[id]`.
+- `useOrderTracking` reads `NEXT_PUBLIC_WS_URL`, drops the singleton socket on disconnect, and invalidates on remount (fixes stale status on back-nav).
+- `tryRefresh` only clears auth on 401/403 — network blips no longer log the customer out mid-checkout.
+- Cart store has a `hydrated` flag; navbar badge waits for hydration → no SSR/client cart-count mismatch.
+- `OrderSummary` now mirrors the backend pricing model exactly: `serviceChargePercent` row + FREE_DELIVERY doesn't drop the taxable base.
+- Checkout: cancelling the new-address form when no saved addresses exist steps back to "Type" instead of re-rendering the same form.
+- Confetti unmounts after 5s (was leaving 80 invisible spans at `z-30` over the navbar).
+- `item-details-drawer` treats `maxSelection===0` as "unlimited" (matches backend convention).
+- `.gitignore` exception added for `apps/web/.env.example` + `apps/admin/.env.example` so fresh-clone setup actually works.
+- `apps/api/src/modules/{customers,users,modifiers}/` empty dirs removed.
+- `main.ts` uses `ConfigService` for CORS + port, drops 3 `console.log`s, registers Orders/Addresses/Coupons swagger tags.
+- HANDOFF + README counts re-verified against current code.
 
 **Bonus: 3 turbo cache issues**
 - `tsbuildinfo` كان بيخلي API build فاضي → API build script بقى `rm -rf dist tsconfig.build.tsbuildinfo && nest build`
@@ -263,9 +286,11 @@ https://images.unsplash.com/photo-<ID>?w=800&q=80&auto=format
 
 ---
 
-## 9. Git history الحالي (9 commits)
+## 9. Git history الحالي (12 commits — run `git log --oneline` for the live list)
 
 ```
+902df56 feat: Sprint 4 - Checkout & Orders (Auth + Live Tracking)
+fea650f docs: add HANDOFF.md for session continuity
 330d27f fix(api): non-existent category filter returned the entire menu
 3598be2 fix: post-review issues caught by full sprint audit
 2d49d56 fix(api): replace arbitrary Unsplash URLs with prompt-matching AI images
@@ -285,56 +310,42 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 
 ## 10. الـ Project Plan الكامل
 
-موجود في `restaurant-ordering-project-plan.md` (827 سطر). يحتوي على 9 sprints مخطط لها:
+موجود في `restaurant-ordering-project-plan.md` (548 سطر). يحتوي على 9 sprints مخطط لها:
 
 - ✅ **Sprint 0** — Setup & Foundation
 - ✅ **Sprint 1** — Design System & Hero ⭐ (القطعة الذهبية)
 - ✅ **Sprint 2** — Database & Backend Core
 - ✅ **Sprint 3** — Menu & Cart Experience
-- 🚀 **Sprint 4** — Checkout & Orders (← التالي)
-- ⏳ **Sprint 5** — Admin Dashboard
+- ✅ **Sprint 4** — Checkout & Orders (Auth + Live Tracking)
+- 🚀 **Sprint 5** — Admin Dashboard (← التالي)
 - ⏳ **Sprint 6** — Kitchen Display System (KDS)
 - ⏳ **Sprint 7** — Payments Integration (Paymob Sandbox)
 - ⏳ **Sprint 8** — Polish, SEO, Deploy
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 4: Checkout & Orders
+## 🚀 الخطوة التالية — Sprint 5: Admin Dashboard
 
 ### المحتوى المخطط
 
-**Backend (apps/api):**
-1. `OrdersModule` — service + controller
-2. DTOs: `CreateOrderDto` مع validation للـ items + address + payment type
-3. Endpoints:
-   - `POST /orders` — إنشاء order مع snapshot للأسعار، calculation للـ totals + VAT + delivery، توليد `orderNumber` فريد (e.g. `PH-2026-0001`)
-   - `GET /orders/me` — قائمة طلبات الـ customer current
-   - `GET /orders/:id` — تفاصيل order واحد (مع authorization check)
-4. Status transitions في `OrderStatusHistory`
-5. Trigger `RealtimeGateway` لما order يُنشأ (broadcast لـ `admin` و `kitchen` rooms)
+**Admin app (apps/admin — port 3001):**
+- شغّال حالياً كـ `create-next-app` stub (Geist fonts + default splash). Sprint 5 هيحوله للـ admin dashboard الحقيقي.
+- Staff login باستخدام `POST /auth/staff/login` (موجود وجاهز).
+- Dashboard overview: today's orders count + revenue + status breakdown.
+- Live orders table بـ Socket.io subscribe على `order.created` و `order.statusChanged` events (الـ API بيـ broadcast لرومات `admin` و `kitchen` بالفعل).
+- Menu management UI: CRUD على categories + menu items + sizes + modifier groups (الـ endpoints موجودة من Sprint 2: `POST/PATCH/DELETE /categories`, `/menu-items`).
+- Order detail view بـ status transition buttons (الـ `PATCH /orders/:id/status` بالفعل بيدعم كل الـ transitions بما فيها READY/OUT_FOR_DELIVERY → CANCELLED).
+- Settings editor: VAT, delivery fee, working hours (الـ `PUT /settings/:key` موجود — لازم نضيف allowlist للقيم).
+- Customer list + per-customer order history.
 
-**Frontend (apps/web):**
-1. صفحة `/checkout` — Multi-step form:
-   - Step 1: Delivery type (Delivery / Pickup / Dine-in)
-   - Step 2: Address (للـ Delivery) — autocomplete or manual
-   - Step 3: Payment method (Cash on Delivery كـ MVP، Paymob في Sprint 7)
-   - Step 4: Review + place order
-2. صفحة `/order/success` — Confetti + order number + estimated time
-3. صفحة `/order/[id]` — Tracking timeline (Pending → Confirmed → Preparing → Ready → Delivered/Picked up)
-4. Live updates عبر Socket.io client
-5. صفحة `/orders` — Order history (يتطلب auth)
-6. Auth pages: `/login`, `/register` لـ customers
-7. Customer profile dropdown في Navbar
-
-**State changes:**
-- Extend `cart-store.ts` بـ `clear()` بعد order success
-- New: `auth-store.ts` للـ access/refresh tokens + customer profile
-- Auth interceptor في `lib/api.ts` يرفع Bearer token تلقائياً
+**Backend prerequisites (لو فيه gap):**
+- Socket authentication for staff rooms — حالياً الـ `join` على `admin`/`kitchen` rooms مرفوض من client side عشان السكيوريتي. Sprint 5 لازم يضيف proper handshake auth.
+- `Customers` endpoints (موجود فاضي حالياً) للـ admin list view.
 
 ### قبل البدء
-1. اقرأ هذا الملف بالكامل
-2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6)
-3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1)
+1. اقرأ هذا الملف بالكامل + قسم Sprint 4 fixes (قسم 5 آخر صف).
+2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
+3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 
 ---
 

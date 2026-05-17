@@ -37,11 +37,16 @@ interface CartState {
   items: CartItem[];
   vatPercent: number;
   deliveryFee: number;
+  // True after Zustand has rehydrated from localStorage. UI that paints
+  // counts/totals should wait for this before rendering, otherwise the
+  // server (empty cart) and the client (rehydrated cart) markup mismatch.
+  hydrated: boolean;
   add: (item: Omit<CartItem, 'lineId' | 'quantity'> & { quantity?: number }) => void;
   remove: (lineId: string) => void;
   updateQuantity: (lineId: string, quantity: number) => void;
   clear: () => void;
   setConfig: (cfg: Partial<Pick<CartState, 'vatPercent' | 'deliveryFee'>>) => void;
+  setHydrated: () => void;
   totals: () => CartTotals;
   unitPrice: (item: Pick<CartItem, 'basePrice' | 'sizePriceModifier' | 'modifiers'>) => number;
 }
@@ -64,6 +69,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       vatPercent: 14, // overridden by settings on app load
       deliveryFee: 5,
+      hydrated: false,
 
       add: (payload) => {
         const item: CartItem = {
@@ -101,6 +107,8 @@ export const useCartStore = create<CartState>()(
 
       setConfig: (cfg) => set(cfg),
 
+      setHydrated: () => set({ hydrated: true }),
+
       unitPrice: unitPriceOf,
 
       totals: () => {
@@ -122,6 +130,9 @@ export const useCartStore = create<CartState>()(
     {
       name: 'pizza-height-cart',
       partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
     },
   ),
 );

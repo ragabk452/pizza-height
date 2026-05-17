@@ -87,9 +87,11 @@ export class CreateOrderDto {
   @ApiPropertyOptional({
     description: 'Optional tip in restaurant currency',
     minimum: 0,
+    maximum: 10_000,
   })
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10_000)
   tipAmount?: number;
 }

@@ -1,19 +1,47 @@
+// Fail-fast in production if the security-critical secrets aren't set.
+// `DATABASE_URL` is consulted by Prisma directly, but we mirror it here so
+// the error surfaces at boot rather than the first query.
+function requireInProd(
+  name: string,
+  value: string | undefined,
+  dev: string,
+): string {
+  if (value && value.length > 0) return value;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      `Missing required env var "${name}" (NODE_ENV=production).`,
+    );
+  }
+  return dev;
+}
+
 export default () => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '4000', 10),
   corsOrigins: (
     process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:3001'
-  ).split(','),
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
   database: {
-    url: process.env.DATABASE_URL,
+    url: requireInProd('DATABASE_URL', process.env.DATABASE_URL, ''),
   },
   redis: {
     url: process.env.REDIS_URL ?? 'redis://localhost:6379',
   },
   jwt: {
-    secret: process.env.JWT_SECRET ?? 'change-me-in-production',
+    secret: requireInProd(
+      'JWT_SECRET',
+      process.env.JWT_SECRET,
+      'dev-only-jwt-secret',
+    ),
     accessExpiry: process.env.JWT_ACCESS_EXPIRY ?? '15m',
-    refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'change-me-too',
+    refreshSecret: requireInProd(
+      'JWT_REFRESH_SECRET',
+      process.env.JWT_REFRESH_SECRET,
+      'dev-only-jwt-refresh-secret',
+    ),
     refreshExpiry: process.env.JWT_REFRESH_EXPIRY ?? '7d',
   },
   cloudinary: {

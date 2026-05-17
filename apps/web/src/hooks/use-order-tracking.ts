@@ -6,9 +6,11 @@ import { io, type Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api';
 import type { Order, OrderStatus } from '@/lib/api-types';
 
-// Strip the trailing /api/v1 path — the socket namespace lives on the
-// origin, not on the REST prefix.
-function socketOrigin(): string {
+// Prefer the explicit WS URL when set, otherwise derive from the REST origin
+// (strip the trailing /api/v1 — the socket namespace lives on the host root).
+function socketUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_WS_URL;
+  if (explicit && explicit.length > 0) return explicit;
   try {
     const url = new URL(API_BASE_URL);
     return `${url.protocol}//${url.host}`;
@@ -17,14 +19,19 @@ function socketOrigin(): string {
   }
 }
 
+// Module-level singleton: react-query subscribers across pages share one
+// connection. We null it back out on `disconnect` so a server restart or
+// network drop forces a fresh handshake on the next mount.
 let sharedSocket: Socket | null = null;
 
 function getSocket(): Socket {
-  if (sharedSocket && sharedSocket.connected) return sharedSocket;
   if (sharedSocket) return sharedSocket;
-  sharedSocket = io(`${socketOrigin()}/realtime`, {
+  sharedSocket = io(`${socketUrl()}/realtime`, {
     transports: ['websocket', 'polling'],
     autoConnect: true,
+  });
+  sharedSocket.on('disconnect', () => {
+    sharedSocket = null;
   });
   return sharedSocket;
 }
@@ -45,12 +52,17 @@ export function useOrderTracking(orderId: string | undefined) {
     if (socket.connected) join();
     socket.on('connect', join);
 
+    // Re-fetch the order on mount/remount so a back-nav between two
+    // tracking pages doesn't show stale data from before the room was left
+    // (we missed any status updates while subscribed elsewhere).
+    void queryClient.invalidateQueries({ queryKey: ['orders', orderId] });
+
     const handler = (payload: { id: string; status: OrderStatus; updatedAt: string }) => {
       if (payload.id !== orderId) return;
       queryClient.setQueryData<Order | undefined>(['orders', orderId], (prev) =>
         prev ? { ...prev, status: payload.status, updatedAt: payload.updatedAt } : prev,
       );
-      // Also refetch to pick up the new statusHistory row
+      // Refetch to pick up the new statusHistory row.
       void queryClient.invalidateQueries({ queryKey: ['orders', orderId] });
     };
 
@@ -59,7 +71,7 @@ export function useOrderTracking(orderId: string | undefined) {
     return () => {
       socket.off('order.statusChanged', handler);
       socket.off('connect', join);
-      socket.emit('leave', room);
+      if (socket.connected) socket.emit('leave', room);
     };
   }, [orderId, queryClient]);
 }

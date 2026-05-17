@@ -17,26 +17,22 @@
 ## ✨ Tech Stack
 
 ### Frontend
-- **Next.js 16** (App Router + Turbopack)
-- **React 19**
-- **TypeScript** (strict mode)
-- **Tailwind CSS v4**
-- **shadcn/ui** + **Aceternity UI** + **Magic UI**
-- **Framer Motion** + **GSAP** (animations)
-- **Zustand** (state) + **TanStack Query** (data fetching)
+- **Next.js 16** (App Router + Turbopack) + **React 19** + **TypeScript** (strict)
+- **Tailwind CSS v4** (CSS-first config)
+- **Framer Motion** (animations) + **Radix Slot** + **Vaul** (drawers) + **Sonner** (toasts)
+- **Zustand** (state, with localStorage persist) + **TanStack Query** (data fetching)
+- **lucide-react** (icons; brand icons supplied as inline SVG)
 
 ### Backend
-- **NestJS 11**
-- **Prisma ORM** + **PostgreSQL 17**
-- **Redis** (cache + pub/sub)
-- **Socket.io** (realtime)
-- **JWT** auth
+- **NestJS 11** + **Prisma 6** + **PostgreSQL 17**
+- **Redis** (planned: cache + pub/sub) + **Socket.io** (realtime broadcasts)
+- **JWT** (access + refresh tokens) + **bcrypt** (12 rounds)
+- **Helmet**, **Throttler**, **nestjs-pino** (logging), **Swagger** (OpenAPI docs)
 
 ### DevOps
-- **Turborepo** (monorepo)
-- **Docker Compose** (local dev)
-- **pnpm** workspaces
-- **GitHub Actions** (CI/CD)
+- **Turborepo** (monorepo) + **pnpm** workspaces
+- **Docker Compose** (local Postgres + Redis)
+- **Husky** + **lint-staged** + **commitlint** (conventional commits)
 
 ---
 
