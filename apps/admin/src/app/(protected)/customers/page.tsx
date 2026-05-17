@@ -2,14 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { Loader2, Mail, Phone, Search, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Topbar } from '@/components/layout/topbar';
 import { TextInput } from '@/components/ui/field';
+import { CustomerDetailDrawer } from '@/components/customers/customer-detail-drawer';
 import { useCustomersList } from '@/hooks/use-admin-data';
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setSearch(input.trim()), 250);
     return () => clearTimeout(t);
@@ -55,40 +60,53 @@ export default function CustomersPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.3 }}
-                // No hover-lift here — the row isn't clickable yet (detail
-                // drawer ships in Sprint 5.1). The hover affordance was
-                // misleading users into clicking and getting nothing.
-                className="bg-surface/40 border-border flex items-center gap-4 rounded-2xl border p-4"
               >
-                <span className="bg-primary/15 border-primary/40 text-primary inline-flex size-11 shrink-0 items-center justify-center rounded-xl border">
-                  <User className="size-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-foreground font-medium">{c.name}</p>
-                  <div className="text-muted mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span className="inline-flex items-center gap-1">
-                      <Phone className="size-3" /> {c.phone}
-                    </span>
-                    {c.email && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(c.id)}
+                  className="bg-surface/40 border-border hover:bg-surface hover:border-primary/40 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)]"
+                >
+                  <span className="bg-primary/15 border-primary/40 text-primary inline-flex size-11 shrink-0 items-center justify-center rounded-xl border">
+                    <User className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-foreground font-medium">{c.name}</p>
+                    <div className="text-muted mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                       <span className="inline-flex items-center gap-1">
-                        <Mail className="size-3" /> {c.email}
+                        <Phone className="size-3" /> {c.phone}
                       </span>
-                    )}
+                      {c.email && (
+                        <span className="inline-flex items-center gap-1">
+                          <Mail className="size-3" /> {c.email}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-display text-primary text-lg tabular-nums">
-                    ${c.lifetimeSpend.toFixed(2)}
-                  </p>
-                  <p className="text-muted text-[10px] tracking-wide uppercase">
-                    {c.orderCount} {c.orderCount === 1 ? 'order' : 'orders'}
-                  </p>
-                </div>
+                  <div className="text-right">
+                    <p className="font-display text-primary text-lg tabular-nums">
+                      ${c.lifetimeSpend.toFixed(2)}
+                    </p>
+                    <p className="text-muted text-[10px] tracking-wide uppercase">
+                      {c.orderCount} {c.orderCount === 1 ? 'order' : 'orders'}
+                    </p>
+                  </div>
+                </button>
               </motion.li>
             ))}
           </ul>
         )}
       </main>
+
+      <CustomerDetailDrawer
+        customerId={selectedId}
+        onClose={() => setSelectedId(null)}
+        // Deep-link into /orders?id=<orderId> — the orders page already
+        // opens that order's drawer when ?id= is set.
+        onOrderClick={(orderId) => {
+          setSelectedId(null);
+          router.push(`/orders?id=${orderId}`);
+        }}
+      />
     </>
   );
 }

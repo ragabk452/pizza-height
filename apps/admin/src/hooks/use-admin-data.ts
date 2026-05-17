@@ -5,10 +5,14 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import type {
   Category,
+  CategoryCreatePayload,
+  CategoryUpdatePayload,
   CustomerDetail,
   CustomerListItem,
   DashboardStats,
   MenuItem,
+  MenuItemCreatePayload,
+  MenuItemUpdatePayload,
   Order,
   OrderStatus,
   SettingsMap,
@@ -116,7 +120,9 @@ export function useAdminCategories() {
   const enabled = useAuthed();
   return useQuery({
     queryKey: KEYS.categories,
-    queryFn: () => api<Category[]>('/categories'),
+    // includeInactive surfaces soft-deleted categories so admins can see
+    // / restore them; the public list view filters them out itself.
+    queryFn: () => api<Category[]>('/categories', { query: { includeInactive: true } }),
     enabled,
   });
 }
@@ -127,6 +133,92 @@ export function useAdminMenuItems() {
     queryKey: KEYS.menuItems,
     queryFn: () => api<MenuItem[]>('/menu-items?availableOnly=false'),
     enabled,
+  });
+}
+
+export function useAdminMenuItem(slugOrId: string | undefined) {
+  const enabled = useAuthed();
+  return useQuery({
+    queryKey: ['admin', 'menu-item', slugOrId ?? ''],
+    queryFn: () => api<MenuItem>(`/menu-items/${slugOrId}`),
+    enabled: enabled && Boolean(slugOrId),
+  });
+}
+
+// Invalidating the menu / categories cache after every write is the
+// simplest correct thing — the list response is small and the admin
+// menu page is rarely open in two tabs.
+function invalidateMenu(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: KEYS.menuItems });
+  void queryClient.invalidateQueries({ queryKey: KEYS.categories });
+  void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-item'] });
+}
+
+// Categories ---------------------------------------------------------
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CategoryCreatePayload) =>
+      api<Category>('/categories', { method: 'POST', body: payload }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CategoryUpdatePayload }) =>
+      api<Category>(`/categories/${id}`, { method: 'PATCH', body: payload }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/categories/${id}`, { method: 'DELETE' }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+// Menu items ---------------------------------------------------------
+
+export function useCreateMenuItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: MenuItemCreatePayload) =>
+      api<MenuItem>('/menu-items', { method: 'POST', body: payload }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+export function useUpdateMenuItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: MenuItemUpdatePayload }) =>
+      api<MenuItem>(`/menu-items/${id}`, { method: 'PATCH', body: payload }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+export function useDeleteMenuItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/menu-items/${id}`, { method: 'DELETE' }),
+    onSuccess: () => invalidateMenu(queryClient),
+  });
+}
+
+export function useToggleMenuItemAvailability() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isAvailable }: { id: string; isAvailable: boolean }) =>
+      api<{ id: string; name: string; isAvailable: boolean }>(`/menu-items/${id}/availability`, {
+        method: 'PATCH',
+        body: { isAvailable },
+      }),
+    onSuccess: () => invalidateMenu(queryClient),
   });
 }
 
@@ -161,5 +253,19 @@ export function useAdminSettings() {
     queryKey: KEYS.settings,
     queryFn: () => api<SettingsMap>('/settings'),
     enabled,
+  });
+}
+
+export function useUpdateSetting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, value }: { key: string; value: unknown }) =>
+      api<{ key: string; value: unknown }>(`/settings/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        body: { value },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: KEYS.settings });
+    },
   });
 }

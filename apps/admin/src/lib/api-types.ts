@@ -145,6 +145,36 @@ export interface Category {
   isActive: boolean;
 }
 
+export interface ItemSize {
+  id: string;
+  menuItemId: string;
+  name: string;
+  diameterCm: number | null;
+  priceModifier: number;
+  isDefault: boolean;
+  sortOrder: number;
+}
+
+export interface Modifier {
+  id: string;
+  modifierGroupId: string;
+  name: string;
+  priceModifier: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
+export interface ModifierGroup {
+  id: string;
+  menuItemId: string;
+  name: string;
+  isRequired: boolean;
+  minSelection: number;
+  maxSelection: number;
+  sortOrder: number;
+  modifiers: Modifier[];
+}
+
 export interface MenuItem {
   id: string;
   categoryId: string;
@@ -161,8 +191,70 @@ export interface MenuItem {
   isGlutenFree: boolean;
   isNew: boolean;
   prepTimeMin: number;
+  sortOrder: number;
   category?: Pick<Category, 'id' | 'slug' | 'name'>;
+  sizes?: ItemSize[];
+  modifierGroups?: ModifierGroup[];
 }
+
+// Payloads sent to the API when creating or updating a menu item.
+// The nested children replace the existing collections atomically.
+export interface SizePayload {
+  name: string;
+  diameterCm?: number;
+  priceModifier: number;
+  isDefault?: boolean;
+  sortOrder?: number;
+}
+
+export interface ModifierPayload {
+  name: string;
+  priceModifier: number;
+  isAvailable?: boolean;
+  sortOrder?: number;
+}
+
+export interface ModifierGroupPayload {
+  name: string;
+  isRequired: boolean;
+  minSelection: number;
+  maxSelection: number;
+  sortOrder?: number;
+  modifiers: ModifierPayload[];
+}
+
+export interface MenuItemCreatePayload {
+  categoryId: string;
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  basePrice: number;
+  isAvailable?: boolean;
+  isPopular?: boolean;
+  isSpicy?: boolean;
+  isVegetarian?: boolean;
+  isVegan?: boolean;
+  isGlutenFree?: boolean;
+  isNew?: boolean;
+  prepTimeMin?: number;
+  sortOrder?: number;
+  sizes?: SizePayload[];
+  modifierGroups?: ModifierGroupPayload[];
+}
+
+export type MenuItemUpdatePayload = Partial<MenuItemCreatePayload>;
+
+export interface CategoryCreatePayload {
+  slug: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export type CategoryUpdatePayload = Partial<CategoryCreatePayload>;
 
 // Customers ==========================================================
 

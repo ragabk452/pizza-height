@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsInt,
   IsNumber,
@@ -10,7 +13,105 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+
+// ---------------------------------------------------------------------------
+// Nested children — passed inside the create/update payload. The service
+// wraps the whole write in a Prisma transaction so the menu item + its
+// sizes + its modifier groups + their modifiers all land atomically.
+// ---------------------------------------------------------------------------
+
+export class SizeDto {
+  @ApiProperty({ example: 'Large' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 32 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  diameterCm?: number;
+
+  @ApiProperty({ example: 4.5 })
+  @IsNumber()
+  priceModifier!: number;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+}
+
+export class ModifierDto {
+  @ApiProperty({ example: 'Truffle oil drizzle' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @ApiProperty({ example: 1.5 })
+  @IsNumber()
+  priceModifier!: number;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+}
+
+export class ModifierGroupDto {
+  @ApiProperty({ example: 'Extra toppings' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @ApiProperty({ default: false })
+  @IsBoolean()
+  isRequired!: boolean;
+
+  @ApiProperty({ default: 0 })
+  @IsInt()
+  @Min(0)
+  minSelection!: number;
+
+  @ApiProperty({ default: 1 })
+  @IsInt()
+  @Min(0)
+  maxSelection!: number;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+
+  @ApiProperty({ type: [ModifierDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ModifierDto)
+  modifiers!: ModifierDto[];
+}
+
+// ---------------------------------------------------------------------------
+// Top-level menu item DTOs
+// ---------------------------------------------------------------------------
 
 export class CreateMenuItemDto {
   @ApiProperty()
@@ -92,6 +193,24 @@ export class CreateMenuItemDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  // Nested children — admin UI sends the full desired state of sizes +
+  // modifier groups in one payload. The service treats them as a complete
+  // replacement (delete-then-create) so admins can reorder, add, and remove
+  // without orchestrating per-row HTTP calls.
+  @ApiPropertyOptional({ type: [SizeDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SizeDto)
+  sizes?: SizeDto[];
+
+  @ApiPropertyOptional({ type: [ModifierGroupDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ModifierGroupDto)
+  modifierGroups?: ModifierGroupDto[];
 }
 
 export class UpdateMenuItemDto extends PartialType(CreateMenuItemDto) {}

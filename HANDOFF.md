@@ -77,9 +77,9 @@ packages/
 
 ---
 
-## 4. الـ Sprints المنجزة (0 → 8)
+## 4. الـ Sprints المنجزة (0 → 9)
 
-> الـ Sprints 0→3 ملخصها هنا. Sprints 4→8 details + post-sprint audits في **قسم 5**.
+> الـ Sprints 0→3 ملخصها هنا. Sprints 4→9 details + post-sprint audits في **قسم 5**.
 
 ### ✅ Sprint 0 — Setup & Foundation
 - Turborepo monorepo (Mono-repo اختياره)
@@ -185,6 +185,32 @@ packages/
 | 18 | Image fix: arbitrary Unsplash IDs (garlic bread = portrait) | استبدلت IDs المعروف خطأها + غيرت affogato (كان duplicate لـ bbq) |
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
+
+**Sprint 9 — Admin completionist: Menu CRUD + Settings editor + Customer drawer (2026-05-17):**
+- **Backend (nested MenuItem CRUD):**
+  - `CreateMenuItemDto` + `UpdateMenuItemDto` now accept optional `sizes?: SizeDto[]` + `modifierGroups?: ModifierGroupDto[]` (each group nests its own `modifiers[]`). Class-validator + class-transformer drive the nested validation.
+  - `MenuItemsService.create` + `.update` wrap the writes in a Prisma `$transaction`. On update, sizes and modifier groups are **replaced** atomically (delete-then-create) — keeps the admin UI dead simple. `OrderItemModifier` FK is `Restrict`, so deleting a modifier referenced by past orders throws `P2003` → caught and returned as `BadRequestException` with a friendly "toggle isAvailable instead" message.
+  - Categories CRUD already existed (POST/PATCH/DELETE under `@Roles(ADMIN, MANAGER)`, DELETE soft-deletes). No backend changes needed there.
+  - Settings: existing `PUT /settings/:key` (accepts `{ value: unknown }`) is used as-is. Per-key validation happens client-side in the admin (server stays permissive).
+- **Admin app — hooks (`use-admin-data.ts`):**
+  - New mutations: `useCreateCategory`, `useUpdateCategory`, `useDeleteCategory`, `useCreateMenuItem`, `useUpdateMenuItem`, `useDeleteMenuItem`, `useToggleMenuItemAvailability`, `useUpdateSetting`. All invalidate the relevant query keys on success.
+  - New query: `useAdminMenuItem(slugOrId)` for the edit drawer's full detail load.
+  - `useAdminCategories` now passes `includeInactive: true` so admins can see/restore soft-deleted categories (the public catalogs filter them out themselves).
+- **Admin app — new types (`api-types.ts`):** added `ItemSize`, `Modifier`, `ModifierGroup`, `SizePayload`, `ModifierPayload`, `ModifierGroupPayload`, `MenuItemCreatePayload`, `MenuItemUpdatePayload`, `CategoryCreatePayload`, `CategoryUpdatePayload`. Existing `MenuItem` interface extended with optional `sizes` + `modifierGroups`.
+- **Admin app — UI:**
+  - `components/ui/confirm-dialog.tsx` — shared centered-modal confirm built on Vaul (focus trap + scroll lock + ESC handled for free). Used by both deletes in `/menu`.
+  - `components/menu/category-drawer.tsx` — luxe right-side drawer with name/slug (auto-slugify), description, image URL, sort order, visibility toggle. Outer wrapper owns the `Drawer.Root`; inner `CategoryForm` is rekey'd to `category?.id ?? 'new'` so each (re)open gets fresh `useState` init — no setState-in-effect.
+  - `components/menu/menu-item-drawer.tsx` — two-stage drawer: outer wraps `Drawer.Root`, `MenuItemLoader` fetches detail when editing then renders `MenuItemForm` with `initial` derived from props. Form covers scalar fields + tag toggles + **inline sizes editor** (move up/down, set-default, delete) + **inline modifier-groups editor** (each group has name + required + min/max + nested modifiers with `isAvailable` toggle + remove).
+  - `components/customers/customer-detail-drawer.tsx` — right-side drawer over the customer list: avatar + verified phone/email + lifetime spend + order count + saved addresses + last-25 non-cancelled orders. Clicking a row routes to `/orders?id=<orderId>` so the existing OrderDetailDrawer picks it up.
+  - `app/(protected)/menu/page.tsx` — full rewrite. Per-category sections with "+ Item" inline, sold-out toggle pill on each card, edit/delete pencil/trash. Empty-state CTA when no categories exist. Confirmations route through `ConfirmDialog`.
+  - `app/(protected)/settings/page.tsx` — full rewrite. Hand-curated allowlist (`DEFS`) of editable keys with per-field type (`string` / `number` / `percent` / `currency` / `workingHours`) and per-key validator (VAT/service-charge 0–100, currency = 3-letter uppercase, min order ≥ 0, working hours = JSON shape `{day: {open, close}}`). Inline edit/save/cancel per row. Anything in the API response not in the allowlist surfaces in a read-only "Other settings" section. Editor component rekey'd to value+key so each edit gets fresh `useState` init.
+  - `app/(protected)/customers/page.tsx` — rows are now full-width buttons that open the new drawer.
+- **Sprint 7 leftover lint fix:** `MockPaymobClient.createSession` had `async` with no `await`. Dropped `async` + wrapped return in `Promise.resolve` — same interface shape, lint passes.
+- **Verified end-to-end** (servers restarted on Sprint 9 builds):
+  - API smoke: login → create category → create menu item with 2 sizes + 1 modifier group (2 modifiers) → PATCH item with 3 sizes (sizes correctly replaced, default size moved) → toggle availability OFF then ON → update setting → fetch customer detail → cleanup (DELETE returns 204).
+  - Role guards: KITCHEN can toggle availability (allowed) but `DELETE /menu-items/:id` returns 403, and `POST /categories` returns 403.
+  - Admin pages all return 200: `/`, `/menu`, `/settings`, `/customers`, `/login`.
+  - Type-check + lint + build clean on all 3 apps.
 
 **Sprint 8 — Polish + SEO + Deploy-readiness (2026-05-17):**
 - **SEO foundation:**
@@ -414,28 +440,24 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 6** — Kitchen Display System (KDS)
 - ✅ **Sprint 7** — Payments Integration (Paymob Sandbox + Mock provider)
 - ✅ **Sprint 8** — Polish, SEO, Deploy-readiness (local phase done, actual deploy pending)
-- 🚀 **Sprint 9** — Deploy + Admin completionist work (← التالي)
+- ✅ **Sprint 9** — Admin completionist (Menu CRUD + Settings editor + Customer drawer)
+- 🚀 **Sprint 10** — Deploy (Vercel + Railway) — pending user accounts
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 9: Deploy + Admin completionist
+## 🚀 الخطوة التالية — Sprint 10: Deploy
 
 ### المحتوى المخطط
 
-**Deploy (الجزء اللي تأجل من Sprint 8):**
+**Deploy فعلي (الجزء اللي اتأجل من Sprint 8 + 9):**
 - Vercel للـ web + admin (free tier). الـ `vercel.json` في كل app جاهز — بس محتاج user يـ create Vercel projects بـ Root Directory = apps/web و apps/admin.
 - Railway للـ API + Postgres + Redis (free tier $5/month credit). الـ `Dockerfile` + `railway.toml` جاهزين — Railway هيـ pick them up تلقائياً.
 - Production secrets setup (راجع `apps/{web,admin,api}/.env.production.example`). أهم نقطة: `NEXT_PUBLIC_APP_URL` لازم يتعـط في Vercel وإلا الـ build هيـ throw (راجع `apps/web/src/lib/site-url.ts`).
 - CORS origins للـ deployed URLs (في API `CORS_ORIGINS` env var).
 - Custom domain (لو متاح) + README بـ live demo links.
 
-**Admin completionist work:**
-- Menu CRUD UI (Sprint 5 wireframed the read-only menu; this adds create/edit/delete + size + modifier nesting + sold-out toggle).
-- Settings editor (read-only viewer موجود؛ الـ editor محتاج allowlist + per-key validation).
-- Customer detail drawer (الـ `useCustomerDetail` hook موجود ومش متستعمل).
-
 ### قبل البدء
-1. اقرأ هذا الملف بالكامل + قسم Sprint 8 details (قسم 5).
+1. اقرأ هذا الملف بالكامل + قسم Sprint 8/9 details (قسم 5).
 2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
 3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 
@@ -491,7 +513,7 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 
 ---
 
-**آخر تحديث:** 2026-05-17 (بعد Sprint 8 — Polish + SEO + Deploy-readiness)
-**Working tree:** modified (Sprint 8 changes not committed yet)
-**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين (restarted على الـ Sprint 8 builds)
-**التالي:** Sprint 9 — Deploy (Vercel + Railway) + Admin Menu CRUD / Settings editor / Customer detail drawer
+**آخر تحديث:** 2026-05-17 (بعد Sprint 9 — Admin completionist)
+**Working tree:** modified (Sprint 9 changes not committed yet)
+**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين (restarted على الـ Sprint 9 builds)
+**التالي:** Sprint 10 — Deploy (Vercel + Railway) — pending user accounts
