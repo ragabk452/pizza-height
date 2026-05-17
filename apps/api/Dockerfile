@@ -20,8 +20,11 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/api/package.json apps/api/
 COPY packages ./packages
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --filter @pizza-height/api...
+# NOTE: pnpm cache mount was removed — Railway's Metal builder rejects
+# unscoped `id=` arguments and requires an "s/<cacheKey>/..." prefix that
+# doesn't transfer back to local Docker BuildKit. Plain install works
+# everywhere; CI builds eat ~30s extra fetch time but it's not the hot path.
+RUN pnpm install --frozen-lockfile --filter @pizza-height/api...
 
 # ------------ Build (compile TypeScript + Prisma client) ------------
 FROM base AS build

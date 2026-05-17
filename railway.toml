@@ -1,0 +1,19 @@
+# Railway service config for the Pizza Height API.
+#
+# This lives at the monorepo root so Railway uses the whole tree as the
+# build context — the Dockerfile copies pnpm-workspace.yaml, the packages/
+# folder, and apps/api/, so it cannot build from apps/api alone.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Railway runs the Dockerfile's CMD by default:
+#   prisma migrate deploy && node dist/main
+# Override here if you ever need to skip migrations for a given deploy.

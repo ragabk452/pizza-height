@@ -2,6 +2,13 @@
 
 > **Elevate Your Taste** — A luxury pizza ordering platform built as a portfolio showcase.
 
+**🌐 Live demo:** [pizza-height.vercel.app](https://pizza-height.vercel.app) · **👨‍💼 Admin:** [pizza-height-admin.vercel.app](https://pizza-height-admin.vercel.app) · **⚙️ API:** [api-production-d421.up.railway.app/api/docs](https://api-production-d421.up.railway.app/api/docs)
+
+### Try it out
+- **Customer login:** phone `+201001112222` / password `DemoPass2026!` (or `+201112223333`, `+201223334444`)
+- **Admin login:** `admin@pizzaheight.com` / `AdminPass2026!` · also `manager@…` / `kitchen@…`
+- **Test card:** any card details work — the gateway is mock-mode (clearly disclosed on the payment page)
+
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Node](https://img.shields.io/badge/node-22%20LTS-green)
@@ -122,12 +129,12 @@ Then open:
 
 The platform splits into three independently-deployable services:
 
-| Service | Hosting | URL pattern |
-|---------|---------|-------------|
-| `apps/web` (customer) | Vercel | `pizza-height.vercel.app` |
-| `apps/admin` (staff) | Vercel | `admin-pizza-height.vercel.app` |
-| `apps/api` (NestJS) | Railway (or Render / Fly) | `pizza-height-api.up.railway.app` |
-| Postgres + Redis | Railway managed services | — |
+| Service | Hosting | Live URL |
+|---------|---------|----------|
+| `apps/web` (customer) | Vercel | https://pizza-height.vercel.app |
+| `apps/admin` (staff) | Vercel | https://pizza-height-admin.vercel.app |
+| `apps/api` (NestJS) | Railway | https://api-production-d421.up.railway.app |
+| Postgres + Redis | Railway managed services | (internal) |
 
 ### One-time setup
 

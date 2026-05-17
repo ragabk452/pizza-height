@@ -77,9 +77,14 @@ packages/
 
 ---
 
-## 4. الـ Sprints المنجزة (0 → 9)
+## 4. الـ Sprints المنجزة (0 → 10) — المشروع LIVE 🎉
 
-> الـ Sprints 0→3 ملخصها هنا. Sprints 4→9 details + post-sprint audits في **قسم 5**.
+> الـ Sprints 0→3 ملخصها هنا. Sprints 4→10 details + post-sprint audits في **قسم 5**.
+
+**Live URLs:**
+- 🌐 Web: https://pizza-height.vercel.app
+- 👨‍💼 Admin: https://pizza-height-admin.vercel.app
+- ⚙️ API: https://api-production-d421.up.railway.app (Swagger at `/api/docs`)
 
 ### ✅ Sprint 0 — Setup & Foundation
 - Turborepo monorepo (Mono-repo اختياره)
@@ -185,6 +190,26 @@ packages/
 | 18 | Image fix: arbitrary Unsplash IDs (garlic bread = portrait) | استبدلت IDs المعروف خطأها + غيرت affogato (كان duplicate لـ bbq) |
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
+
+**Sprint 10 — Production Deploy to Vercel + Railway (2026-05-18):**
+- **Railway project `pizza-height`** (region: us-west, Metal builder) hosts:
+  - `api` service — NestJS API at https://api-production-d421.up.railway.app (Dockerfile build, internal port 4000).
+  - `Postgres` — managed plugin, exposed to `api` via `${{Postgres.DATABASE_URL}}` reference variable. `prisma migrate deploy` runs on every container start (Dockerfile CMD); seeded once from local machine over the public connection string.
+  - `Redis` — managed plugin, exposed via `${{Redis.REDIS_URL}}`. Not actively used yet (Socket.io is in-process), but wired so future pub/sub work has it ready.
+  - Env vars set on `api`: `NODE_ENV=production`, `PORT=4000`, `JWT_SECRET` + `JWT_REFRESH_SECRET` (`openssl rand -base64 64`), `JWT_ACCESS_EXPIRY=15m`, `JWT_REFRESH_EXPIRY=7d`, `DATABASE_URL`/`REDIS_URL` reference vars, `CORS_ORIGINS=https://pizza-height.vercel.app,https://pizza-height-admin.vercel.app`, `PAYMOB_MOCK_BASE_URL=https://pizza-height.vercel.app`.
+  - Project link lives at the **monorepo root** (not `apps/api`) so the Dockerfile build context is the whole tree — `pnpm-workspace.yaml`, `packages/`, and `apps/api/` are all required by the Dockerfile.
+  - The root `railway.toml` declares `dockerfilePath = "apps/api/Dockerfile"`.
+- **Vercel — 2 projects:**
+  - `pizza-height` (web) — root directory `apps/web`, framework Next.js, region fra1. Env: `NEXT_PUBLIC_API_URL=https://api-production-d421.up.railway.app/api/v1`, `NEXT_PUBLIC_WS_URL=https://api-production-d421.up.railway.app`, `NEXT_PUBLIC_APP_URL=https://pizza-height.vercel.app`.
+  - `pizza-height-admin` — root directory `apps/admin`, framework Next.js, region fra1. Env: same `NEXT_PUBLIC_API_URL` + `NEXT_PUBLIC_WS_URL` as web; admin doesn't need `NEXT_PUBLIC_APP_URL`.
+  - Both deployed via `vercel deploy --prod --yes` from the monorepo root (the `.vercel/project.json` is moved between deploys since one `rootDirectory` setting per project means the link can only point at one project at a time).
+- **Dockerfile fixes for Railway's Metal builder:** dropped the `--mount=type=cache,id=pnpm,...` annotation — Metal rejects unscoped `id=` and requires an `s/<cacheKey>/...` prefix that doesn't transfer back to local Docker BuildKit. Plain install costs ~30s extra per build, not worth the maintenance burden.
+- **Vercel project setup gotcha:** `vercel link` from `apps/web` creates a link but doesn't set the project's `rootDirectory` field server-side. Without it, Vercel runs the build from the upload root (the tarball was apps/web alone) and the `cd ../..` in `vercel.json`'s buildCommand exits the tarball → "No Next.js version detected" error. Fix: PATCH `rootDirectory = apps/web` (or `apps/admin`) on the Vercel project via the API, then move `.vercel/` to the monorepo root and deploy from there so the upload context is the whole monorepo. Same fix for admin.
+- **Verified live (every layer):**
+  - Web: all 9 routes (`/`, `/menu`, `/login`, `/register`, `/checkout`, `/orders`, `/payment/mock`, `/sitemap.xml`, `/robots.txt`) return 200. JSON-LD `@id` URLs all start with `https://pizza-height.vercel.app/` (the `site-url.ts` fail-fast worked — `NEXT_PUBLIC_APP_URL` was set in Vercel before the build). `/menu` page contains all 26 `MenuItem` JSON-LD nodes from the production API.
+  - Admin: all 8 routes return 200, including chrome-less `/kds`.
+  - API: `/api/v1/health` → 200, `/api/docs` Swagger UI loads, all CORS headers correct (`pizza-height.vercel.app` + `pizza-height-admin.vercel.app` allowed; `evil.com` rejected — no allow-origin header).
+  - First production order: `PH-2026-0001` placed by Layla Hassan via the live API with proper modifier validation, total $27.36, payment CASH/PENDING. Customer login works, staff login works, admin stats endpoint works.
 
 **Sprint 9 — Admin completionist: Menu CRUD + Settings editor + Customer drawer (2026-05-17):**
 - **Backend (nested MenuItem CRUD):**
@@ -441,25 +466,24 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 7** — Payments Integration (Paymob Sandbox + Mock provider)
 - ✅ **Sprint 8** — Polish, SEO, Deploy-readiness (local phase done, actual deploy pending)
 - ✅ **Sprint 9** — Admin completionist (Menu CRUD + Settings editor + Customer drawer)
-- 🚀 **Sprint 10** — Deploy (Vercel + Railway) — pending user accounts
+- ✅ **Sprint 10** — Deploy to Vercel + Railway 🎉 **LIVE**
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 10: Deploy
+## 🚀 الـ Project LIVE — اقتراحات للـ Sprint التالي
 
-### المحتوى المخطط
+المشروع منشور وشغّال. أي شغل بعد هذا هو bonus (مش mandated في الـ original plan):
 
-**Deploy فعلي (الجزء اللي اتأجل من Sprint 8 + 9):**
-- Vercel للـ web + admin (free tier). الـ `vercel.json` في كل app جاهز — بس محتاج user يـ create Vercel projects بـ Root Directory = apps/web و apps/admin.
-- Railway للـ API + Postgres + Redis (free tier $5/month credit). الـ `Dockerfile` + `railway.toml` جاهزين — Railway هيـ pick them up تلقائياً.
-- Production secrets setup (راجع `apps/{web,admin,api}/.env.production.example`). أهم نقطة: `NEXT_PUBLIC_APP_URL` لازم يتعـط في Vercel وإلا الـ build هيـ throw (راجع `apps/web/src/lib/site-url.ts`).
-- CORS origins للـ deployed URLs (في API `CORS_ORIGINS` env var).
-- Custom domain (لو متاح) + README بـ live demo links.
+- **Real Paymob sandbox** — لو حضرتك جبت credentials فعلية من Paymob، set them in Railway env vars (`PAYMOB_API_KEY`, `INTEGRATION_ID`, `IFRAME_ID`, `HMAC_SECRET`) and the factory in `apps/api/src/modules/payments/payments.module.ts` will switch from mock to real automatically.
+- **Custom domain** — connect a `.com` domain via Vercel/Railway dashboards.
+- **Reviews module** — Prisma model already exists but no UI/API surface yet.
+- **Email notifications via Resend** — order confirmation, status updates. Marked in `.env.example` as planned.
+- **Mobile app** — React Native or Expo.
+- **Analytics** — wire `NEXT_PUBLIC_GA_MEASUREMENT_ID` / `NEXT_PUBLIC_META_PIXEL_ID` (envs are scaffolded but not used).
 
-### قبل البدء
-1. اقرأ هذا الملف بالكامل + قسم Sprint 8/9 details (قسم 5).
-2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
-3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
+### قبل البدء بأي sprint جديد
+1. اقرأ هذا الملف بالكامل.
+2. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 
 ---
 
@@ -513,7 +537,10 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 
 ---
 
-**آخر تحديث:** 2026-05-17 (بعد Sprint 9 — Admin completionist)
-**Working tree:** modified (Sprint 9 changes not committed yet)
-**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين (restarted على الـ Sprint 9 builds)
-**التالي:** Sprint 10 — Deploy (Vercel + Railway) — pending user accounts
+**آخر تحديث:** 2026-05-18 (بعد Sprint 10 — Production deploy)
+**Production:** LIVE 🎉
+  - Web: https://pizza-height.vercel.app
+  - Admin: https://pizza-height-admin.vercel.app
+  - API: https://api-production-d421.up.railway.app
+**Working tree:** modified (Sprint 10 changes not committed yet)
+**التالي:** اختيار حضرتك — راجع قسم 🚀 للاقتراحات
