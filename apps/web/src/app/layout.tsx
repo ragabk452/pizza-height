@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Serif_Display, Manrope, Cairo } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -74,18 +75,20 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
-          <Toaster
-            theme="dark"
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: 'var(--surface)',
-                color: 'var(--foreground)',
-                border: '1px solid var(--border)',
-              },
-            }}
-          />
+          <QueryProvider>
+            {children}
+            <Toaster
+              theme="dark"
+              position="top-center"
+              toastOptions={{
+                style: {
+                  background: 'var(--surface)',
+                  color: 'var(--foreground)',
+                  border: '1px solid var(--border)',
+                },
+              }}
+            />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

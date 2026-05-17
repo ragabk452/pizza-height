@@ -5,13 +5,15 @@ import { ShoppingBag, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useCartStore } from '@/store/cart-store';
+import { useUIStore } from '@/store/ui-store';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
-  { href: '#menu', label: 'Menu' },
-  { href: '#story', label: 'Our Story' },
-  { href: '#locations', label: 'Locations' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/menu', label: 'Menu' },
+  { href: '/#story', label: 'Our Story' },
+  { href: '/#locations', label: 'Locations' },
+  { href: '/#contact', label: 'Contact' },
 ];
 
 export function Navbar() {
@@ -24,6 +26,9 @@ export function Navbar() {
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrolled(latest > 50);
   });
+
+  const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const openCart = useUIStore((s) => s.openCart);
 
   return (
     <motion.header
@@ -51,30 +56,46 @@ export function Navbar() {
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link, i) => (
-            <motion.a
+            <motion.div
               key={link.href}
-              href={link.href}
-              className="text-muted hover:text-primary group relative text-sm font-medium transition-colors"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 * i, ease: 'easeOut' }}
             >
-              {link.label}
-              <span className="bg-primary absolute -bottom-1 left-0 h-px w-0 transition-all duration-300 group-hover:w-full" />
-            </motion.a>
+              <Link
+                href={link.href}
+                className="text-muted hover:text-primary group relative text-sm font-medium transition-colors"
+              >
+                {link.label}
+                <span className="bg-primary absolute -bottom-1 left-0 h-px w-0 transition-all duration-300 group-hover:w-full" />
+              </Link>
+            </motion.div>
           ))}
         </nav>
 
         {/* CTA + Cart */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="relative hidden md:inline-flex">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={openCart}
+            aria-label={`Open cart (${itemCount} items)`}
+          >
             <ShoppingBag />
-            <span className="bg-primary text-background absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold">
-              0
-            </span>
+            {itemCount > 0 && (
+              <motion.span
+                key={itemCount}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="bg-primary text-background absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </motion.span>
+            )}
           </Button>
-          <Button size="sm" className="hidden md:inline-flex">
-            Order Now
+          <Button size="sm" className="hidden md:inline-flex" asChild>
+            <Link href="/menu">Order Now</Link>
           </Button>
 
           {/* Mobile menu button */}
@@ -100,16 +121,20 @@ export function Navbar() {
         >
           <nav className="flex flex-col gap-1 px-6 py-4">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
                 className="text-foreground hover:bg-surface hover:text-primary rounded-md px-3 py-3 text-sm font-medium transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
-            <Button className="mt-3 w-full">Order Now</Button>
+            <Button className="mt-3 w-full" asChild>
+              <Link href="/menu" onClick={() => setMobileOpen(false)}>
+                Order Now
+              </Link>
+            </Button>
           </nav>
         </motion.div>
       )}

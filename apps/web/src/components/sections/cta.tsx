@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export function CTA() {
@@ -48,10 +49,10 @@ export function CTA() {
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <Button size="xl" asChild>
-                <a href="#menu" className="group">
+                <Link href="/menu" className="group">
                   Start Your Order
                   <ArrowRight className="transition-transform group-hover:translate-x-1" />
-                </a>
+                </Link>
               </Button>
               <Button size="xl" variant="outline" asChild>
                 <a href="#locations">Find a Location</a>

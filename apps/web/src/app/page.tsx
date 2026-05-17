@@ -5,6 +5,7 @@ import { FeaturedItems } from '@/components/sections/featured-items';
 import { BentoCategories } from '@/components/sections/bento-categories';
 import { Testimonials } from '@/components/sections/testimonials';
 import { CTA } from '@/components/sections/cta';
+import { CartDrawer } from '@/components/cart/cart-drawer';
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
         <CTA />
       </main>
       <Footer />
+      <CartDrawer />
     </>
   );
 }

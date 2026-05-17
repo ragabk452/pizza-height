@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 const stats = [
@@ -81,10 +82,10 @@ export function Hero() {
             className="mt-10 flex flex-wrap items-center gap-4"
           >
             <Button size="xl" asChild>
-              <a href="#menu" className="group">
+              <Link href="/menu" className="group">
                 Order Now
                 <ArrowRight className="transition-transform group-hover:translate-x-1" />
-              </a>
+              </Link>
             </Button>
             <Button size="xl" variant="outline" asChild>
               <a href="#story" className="group">
