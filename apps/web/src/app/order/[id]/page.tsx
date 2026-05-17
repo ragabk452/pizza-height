@@ -1,19 +1,41 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Loader2, Receipt } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import { StatusTimeline } from '@/components/order/status-timeline';
 import { useOrder } from '@/hooks/use-orders';
 import { useOrderTracking } from '@/hooks/use-order-tracking';
+import { useAuthStore } from '@/store/auth-store';
 
 export default function OrderTrackingPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const orderId = typeof params?.id === 'string' ? params.id : undefined;
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const customer = useAuthStore((s) => s.customer);
   const { data: order, isLoading, isError } = useOrder(orderId);
   useOrderTracking(orderId);
+
+  // Bounce unauthenticated visitors to /login instead of showing a misleading
+  // "Order not found" — useOrder is gated on auth so it doesn't even fire,
+  // and the page would otherwise render with no data to show.
+  useEffect(() => {
+    if (hydrated && !customer && orderId) {
+      router.replace(`/login?next=${encodeURIComponent(`/order/${orderId}`)}`);
+    }
+  }, [hydrated, customer, orderId, router]);
+
+  if (!hydrated || (!customer && hydrated && orderId)) {
+    return (
+      <div className="bg-mesh-gold grid min-h-screen place-items-center">
+        <Loader2 className="text-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

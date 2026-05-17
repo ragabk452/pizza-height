@@ -111,6 +111,7 @@ const STEPS_NO_ADDRESS: StepDef[] = [
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
+  const cartHydrated = useCartStore((s) => s.hydrated);
   const clearCart = useCartStore((s) => s.clear);
   const customer = useAuthStore((s) => s.customer);
   const hydrated = useAuthStore((s) => s.hydrated);
@@ -176,14 +177,16 @@ export default function CheckoutPage() {
     }
   }, [hydrated, customer, router]);
 
-  // Empty-cart guard — bounce to /menu
+  // Empty-cart guard — bounce to /menu. MUST wait for cart to rehydrate
+  // from localStorage first, otherwise the page sees `items=[]` for a beat
+  // and redirects before the persisted cart loads.
   useEffect(() => {
-    if (items.length === 0 && !placeOrder.isSuccess) {
+    if (cartHydrated && items.length === 0 && !placeOrder.isSuccess) {
       router.replace('/menu');
     }
-  }, [items.length, placeOrder.isSuccess, router]);
+  }, [cartHydrated, items.length, placeOrder.isSuccess, router]);
 
-  if (!hydrated || !customer || items.length === 0) {
+  if (!hydrated || !cartHydrated || !customer || items.length === 0) {
     return (
       <div className="bg-mesh-gold grid min-h-screen place-items-center">
         <Loader2 className="text-primary animate-spin" />

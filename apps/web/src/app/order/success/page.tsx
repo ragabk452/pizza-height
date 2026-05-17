@@ -9,6 +9,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import { Confetti } from '@/components/order/confetti';
 import { useOrder } from '@/hooks/use-orders';
+import { useAuthStore } from '@/store/auth-store';
 
 export default function OrderSuccessPage() {
   return (
@@ -47,6 +48,16 @@ function SuccessInner() {
   useEffect(() => {
     if (!orderId) router.replace('/menu');
   }, [orderId, router]);
+
+  // If the user lands here without a session (e.g. they cleared cookies after
+  // placing the order), bounce them to /login so useOrder can succeed.
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const customer = useAuthStore((s) => s.customer);
+  useEffect(() => {
+    if (hydrated && !customer && orderId) {
+      router.replace(`/login?next=${encodeURIComponent(`/order/success?id=${orderId}`)}`);
+    }
+  }, [hydrated, customer, orderId, router]);
 
   if (isLoading || !order) {
     return (
