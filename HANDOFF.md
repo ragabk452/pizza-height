@@ -182,6 +182,11 @@ packages/
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
 
+**Sprint 5 — Admin Dashboard (2026-05-17):**
+- Backend: `CustomersModule` (`GET /customers` + `/customers/:id` with order history), `OrdersService.stats()` exposed at `GET /orders/stats/today`, `RealtimeGateway.staff:join` (JWT-verified) for the `admin`/`kitchen` rooms. `JwtModule` wired into `RealtimeModule`.
+- Frontend (`apps/admin`): replaced the create-next-app stub with a full admin console — Modern Luxe globals, persistent staff-auth-store, `/login` page, sidebar+topbar shell with auth-gated `ProtectedShell`, `/` dashboard (4 animated KPI cards + live recent-orders table + status breakdown bar chart), `/orders` (filter pills + live table with status pulse + vaul detail drawer with status-transition workflow + history timeline), `/menu` (read-only category-grouped item grid), `/customers` (debounced search + spend/order count), `/settings` (read-only key/value table). Realtime via `useStaffRealtime` subscribes to `admin`+`kitchen` rooms and toasts on new orders + invalidates caches.
+- Verified end-to-end with Puppeteer + real Chrome: 9/9 flows pass.
+
 **Post-Sprint-4 audit (2026-05-17) — additional fixes applied:**
 - FREE_DELIVERY coupon no longer reduces the taxable subtotal (was undercharging VAT by ~$0.70 on $50 orders). `couponUsage.discountApplied` now records the actual customer savings (food discount + waived delivery fee).
 - `OrderStatus` transitions now allow `CANCELLED` from `READY` and `OUT_FOR_DELIVERY` (real-ops scenarios like customer no-show or accident).
@@ -317,33 +322,33 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 2** — Database & Backend Core
 - ✅ **Sprint 3** — Menu & Cart Experience
 - ✅ **Sprint 4** — Checkout & Orders (Auth + Live Tracking)
-- 🚀 **Sprint 5** — Admin Dashboard (← التالي)
-- ⏳ **Sprint 6** — Kitchen Display System (KDS)
+- ✅ **Sprint 5** — Admin Dashboard (Live Orders + Status Workflow)
+- 🚀 **Sprint 6** — Kitchen Display System (KDS) (← التالي)
 - ⏳ **Sprint 7** — Payments Integration (Paymob Sandbox)
 - ⏳ **Sprint 8** — Polish, SEO, Deploy
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 5: Admin Dashboard
+## 🚀 الخطوة التالية — Sprint 6: Kitchen Display System (KDS)
 
 ### المحتوى المخطط
 
-**Admin app (apps/admin — port 3001):**
-- شغّال حالياً كـ `create-next-app` stub (Geist fonts + default splash). Sprint 5 هيحوله للـ admin dashboard الحقيقي.
-- Staff login باستخدام `POST /auth/staff/login` (موجود وجاهز).
-- Dashboard overview: today's orders count + revenue + status breakdown.
-- Live orders table بـ Socket.io subscribe على `order.created` و `order.statusChanged` events (الـ API بيـ broadcast لرومات `admin` و `kitchen` بالفعل).
-- Menu management UI: CRUD على categories + menu items + sizes + modifier groups (الـ endpoints موجودة من Sprint 2: `POST/PATCH/DELETE /categories`, `/menu-items`).
-- Order detail view بـ status transition buttons (الـ `PATCH /orders/:id/status` بالفعل بيدعم كل الـ transitions بما فيها READY/OUT_FOR_DELIVERY → CANCELLED).
-- Settings editor: VAT, delivery fee, working hours (الـ `PUT /settings/:key` موجود — لازم نضيف allowlist للقيم).
-- Customer list + per-customer order history.
+**Kitchen-first UI (likely in `apps/admin` as a dedicated `/kds` route، أو app منفصل):**
+- Full-screen، dark-mode، giant-typography view مخصص لشاشة المطبخ.
+- Cards per active order (PENDING/CONFIRMED/PREPARING/READY) مرتبة حسب `estimatedReadyAt`.
+- Card content: order number، items (name + size + modifiers + notes prominent)، elapsed time since order placed، allergy/customer notes highlighted.
+- One-tap actions: "Start", "Ready", "Sent" — يستخدم `PATCH /orders/:id/status` اللي موجود.
+- Live updates عبر Socket.io على room `kitchen` (الـ `staff:join` بـ token من Sprint 5 جاهز ومحمي للـ KITCHEN role).
+- Audio chime لو order جديد وصل (optional).
+- "Bumped" orders animate out.
 
-**Backend prerequisites (لو فيه gap):**
-- Socket authentication for staff rooms — حالياً الـ `join` على `admin`/`kitchen` rooms مرفوض من client side عشان السكيوريتي. Sprint 5 لازم يضيف proper handshake auth.
-- `Customers` endpoints (موجود فاضي حالياً) للـ admin list view.
+**Sprint 5.1 (parallel, لو الوقت سمح):**
+- Admin: Menu CRUD UI (create/edit categories + items + sizes + modifiers، toggle availability).
+- Admin: Settings editor مع allowlist + validation per key.
+- Admin: Customer detail drawer مع order history.
 
 ### قبل البدء
-1. اقرأ هذا الملف بالكامل + قسم Sprint 4 fixes (قسم 5 آخر صف).
+1. اقرأ هذا الملف بالكامل + قسم Sprint 5 details (قسم 5).
 2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
 3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 
