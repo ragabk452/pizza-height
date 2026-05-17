@@ -1,28 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(mkdir -p \"/Users/ragab1512/Documents/KAREEM/مبرمج/Requests/.claude\")",
-      "Bash(which node *)",
-      "Bash(node -v)",
-      "Bash(which npm *)",
-      "Bash(npm -v)",
-      "Bash(which pnpm *)",
-      "Bash(docker info *)",
-      "Bash(sw_vers)",
-      "Bash(open -a Docker)",
-      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh)",
-      "Bash(bash)",
-      "Bash(docker --version)",
-      "Bash(docker compose *)",
-      "Bash(break)",
-      "Bash(chmod +x .husky/pre-commit .husky/commit-msg)",
-      "Bash(docker exec *)",
-      "Bash(git config *)",
-      "Bash(echo \"   Name:  $\\(git config --global user.name\\)\")",
-      "Bash(echo \"   Email: $\\(git config --global user.email\\)\")",
-      "Bash(rm -rf apps/api/dist apps/web/.next apps/admin/.next .turbo apps/*/.turbo packages/*/.turbo)",
-      "Bash(rm -f /tmp/api-test.log /tmp/web-test.log /tmp/admin-test.log)"
-    ],
-    "additionalDirectories": ["/Users/ragab1512/Documents/KAREEM/مبرمج/Requests"]
+    "allow": ["Bash(*)", "Edit(*)", "Write(*)", "Read(*)"]
   }
 }
