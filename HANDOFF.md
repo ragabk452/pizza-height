@@ -77,7 +77,9 @@ packages/
 
 ---
 
-## 4. الـ Sprints المنجزة (0 → 3)
+## 4. الـ Sprints المنجزة (0 → 7)
+
+> الـ Sprints 0→3 ملخصها هنا. Sprints 4→7 details + post-sprint audits في **قسم 5**.
 
 ### ✅ Sprint 0 — Setup & Foundation
 - Turborepo monorepo (Mono-repo اختياره)
@@ -130,7 +132,7 @@ packages/
 - ValidationPipe (whitelist + forbidNonWhitelisted + transform)
 - ClassSerializerInterceptor + **DecimalToNumberInterceptor** (يحول كل Decimal لـ number recursively)
 - AllExceptionsFilter موحد
-- Swagger UI على `/api/docs` (35 operations across 10 tags as of Sprint 6)
+- Swagger UI على `/api/docs` (38 operations across 11 tags as of Sprint 7)
 - nestjs-pino logger (pino-pretty في dev)
 - Throttler (100 req/min default)
 - JwtAuthGuard كـ APP_GUARD (مع `@Public()` decorator)
@@ -157,7 +159,9 @@ packages/
 
 ---
 
-## 5. الـ Bugs المكتشفة والمصلحة (20 من السبرنتات + ~25 من الـ post-Sprint-4 audit)
+## 5. الـ Bugs المكتشفة والمصلحة + Sprint summaries
+
+> الجدول الأول = bugs من Sprints 0→3. تحته = sprint-by-sprint summaries (Sprint 4→7) + post-sprint audit fixes (Sprint 4, 5, 6).
 
 | # | الـ Bug | الحل |
 |---|---------|------|
@@ -207,6 +211,10 @@ packages/
 - Sidebar gained a "Kitchen Display" link with `target="_blank"` so the kitchen tablet can keep its own window open.
 - Verified 8/8 flows + 1 deliberate skip with Puppeteer + real Chrome (no DRIVER user seeded so the negative role test is API-only via `test 7`).
 
+**Sprint 4 — Checkout & Orders + Customer Auth + Live Tracking (2026-05-17):**
+- Backend: `OrdersModule` (POST /orders with server-side pricing snapshot + sequential PH-YYYY-NNNN orderNumber + status-transition guards), `AddressesModule` (customer-owned CRUD + default-handling), `CouponsModule` (POST /coupons/validate, customer-auth). `RealtimeGateway` broadcasts `order.created` to admin/kitchen rooms and `order.statusChanged` to per-order rooms; supports `join`/`leave` from browser.
+- Frontend (apps/web): customer auth flow (Zustand `auth-store` with persist, `/login` + `/register` luxe two-pane shell, Bearer interceptor in `lib/api.ts` with promise-coalesced refresh-on-401), multi-step `/checkout` with Framer Motion transitions (type → address → payment → review), inline address creation, live coupon validation, sticky order summary. `/order/success` with deterministic confetti, `/order/[id]` tracking timeline subscribed to Socket.io for live status updates, `/orders` history list. Navbar profile dropdown + logout. CartDrawer hoisted to root layout.
+
 **Sprint 5 — Admin Dashboard (2026-05-17):**
 - Backend: `CustomersModule` (`GET /customers` + `/customers/:id` with order history), `OrdersService.stats()` exposed at `GET /orders/stats/today`, `RealtimeGateway.staff:join` (JWT-verified) for the `admin`/`kitchen` rooms. `JwtModule` wired into `RealtimeModule`.
 - Frontend (`apps/admin`): replaced the create-next-app stub with a full admin console — Modern Luxe globals, persistent staff-auth-store, `/login` page, sidebar+topbar shell with auth-gated `ProtectedShell`, `/` dashboard (4 animated KPI cards + live recent-orders table + status breakdown bar chart), `/orders` (filter pills + live table with status pulse + vaul detail drawer with status-transition workflow + history timeline), `/menu` (read-only category-grouped item grid), `/customers` (debounced search + spend/order count), `/settings` (read-only key/value table). Realtime via `useStaffRealtime` subscribes to `admin`+`kitchen` rooms and toasts on new orders + invalidates caches.
@@ -234,6 +242,14 @@ packages/
 - `apps/api/src/modules/{customers,users,modifiers}/` empty dirs removed.
 - `main.ts` uses `ConfigService` for CORS + port, drops 3 `console.log`s, registers Orders/Addresses/Coupons swagger tags.
 - HANDOFF + README counts re-verified against current code.
+
+**Post-Sprint-5 audit (2026-05-17):**
+- Backend: customer `orderCount`+`lifetimeSpend`+embedded recent orders كلهم بقوا exclude CANCELLED بشكل consistent (كان list view بيـ count cancelled و detail aggregate مش بيـ count → نفس العميل بيظهر بـ counts مختلفة). `CustomersService.findOne` بقى `select` بدل `include` (defense in depth ضد passwordHash leak). `?limit=abc` بقى 400 بدل 500 (inline validation لأن global ValidationPipe's `enableImplicitConversion` كان بيـ silently converts NaN قبل ParseIntPipe).
+- Admin: نقلت الصفحات المحمية لـ `(protected)` route group بـ single layout — Sidebar `layoutId` animation فعلاً اشتغل بعدها (كانت بتـ pop بدل ما تـ animate). `/orders` بقى `selectedId` derived من `?id=` directly (back/forward sync). `useStaffRealtime` + web `useOrderTracking`: شلت `sharedSocket = null` على disconnect (socket.io built-in reconnect بيـ handle الـ drop). `/customers` شلت الـ hover-lift لأن detail drawer مش متبني. `OrderDetailDrawer` Back+Cancel buttons gated by `transition.isPending`. `RecentOrdersTable` بقى status badges تـ pulse على active orders. Cleanup: شلت `recharts` dead dep + 5 SVGs من `apps/admin/public/` + create-next-app default README.
+
+**Post-Sprint-6 audit (2026-05-17):**
+- Backend: `OrdersService.fullInclude.payment` بقى whitelist (`id, amount, method, status, providerName, providerId, createdAt, updatedAt`) — defense in depth ضد Paymob's `providerPayload` leak لما Sprint 7 يـ populate it. `RealtimeGateway.staff:join` بقى يـ re-check `User.isActive` / `deletedAt` بعد JWT verify (deactivated staff بـ valid token كان يقدر يفضل snooping). `OrdersService.kdsBoard` cap بقى 200 بدل 60 + log warning لو الـ cap اتحقق. `OrdersController` reordered: `@Get(':id')` و `@Patch(':id/status')` لـ نهاية الـ controller (مش بـ accident).
+- Admin: `useKdsBoard` `enabled` gated على الـ role + `retry: false` (DRIVER ما يـ pollute cache بـ 403). `ElapsedTime` initializes بـ 0 + `suppressHydrationWarning` + tick بقى كل 1s. `Chime.play()` بيـ call `ctx.resume()` (Chrome AudioContext suspended حتى أول gesture). Fullscreen probes `webkitRequestFullscreen` للـ iPad Safari. Sidebar external links: `rel="noopener noreferrer"`.
 
 **Bonus: 3 turbo cache issues**
 - `tsbuildinfo` كان بيخلي API build فاضي → API build script بقى `rm -rf dist tsconfig.build.tsbuildinfo && nest build`
@@ -300,6 +316,12 @@ pnpm dev   # or start each separately:
 6. **Categories filter:** لو passed slug غير موجود → API يرجع `[]` (مش الـ 26 item).
 7. **Cart totals:** تُحسب inline من `[items, vatPercent, deliveryFee]` — لا تستخدم `useMemo(() => totals(), [totals])` (function ref ثابت يخفي الـ updates).
 8. **Husky hooks:** pre-commit يشغل lint-staged، commit-msg يشغل commitlint. لو commit فشل، انظر للسبب — لا تستخدم `--no-verify`.
+9. **Husky + nvm:** الـ pre-commit hooks بتحتاج `pnpm` في الـ PATH. لو شغّلت `git commit` من shell مش loading nvm، الـ hook هيفشل. الحل: `export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use --lts=jod` قبل `git commit`.
+10. **Paymob mock vs real:** الـ `PaymentsModule` factory بيعتبر أي قيمة بـ prefix `your_` أو `replace_me` كـ placeholder → يستخدم `MockPaymobClient`. عشان تستخدم real Paymob sandbox، الأربع env vars (`PAYMOB_API_KEY` / `INTEGRATION_ID` / `IFRAME_ID` / `HMAC_SECRET`) لازم يكونوا بـ values حقيقية. لما تشغّل API هيـ log نوع الـ provider اللي اختاره.
+11. **Mock payment page URL:** الـ MockPaymobClient بيـ build iframe URL بـ `PAYMOB_MOCK_BASE_URL` (default `http://localhost:3000`). لو غيّرت الـ web port غيّر القيمة دي.
+12. **Webhook raw body:** `main.ts` بيـ enable `rawBody: true` عشان `/payments/webhook/paymob` يقدر يـ verify HMAC على exact bytes. أي middleware قبل الـ handler يـ re-serializes هيـ break الـ signature.
+13. **Admin shell route group:** الصفحات المحمية في الأدمن (`/`, `/orders`, `/menu`, `/customers`, `/settings`) في `(protected)` route group بـ shared layout. الـ `/kds` و `/login` خارج الـ group لأنهم chrome-less. لما تضيف صفحة admin جديدة، حطها داخل `(protected)`.
+14. **Realtime singleton socket:** كل من web (`use-order-tracking`) و admin (`use-staff-realtime`, `use-kds-realtime`) عنده module-level singleton للـ Socket.io connection. **مش بنـ null الـ singleton على disconnect** عشان socket.io built-in reconnection يـ keep نفس الـ instance — لو عملنا null هتفتح socket تاني والـ events هتـ fire مرتين.
 
 ---
 
@@ -318,19 +340,19 @@ https://images.unsplash.com/photo-<ID>?w=800&q=80&auto=format
 
 ## 9. Git history الحالي (run `git log --oneline` for the live list)
 
+20 commits على `main` كحد آخر تحديث. الأحدث منهم:
+
 ```
+408c557 feat: Sprint 7 — Payments (Paymob Sandbox + Mock provider)
+0e9efe7 fix: post-Sprint-6 audit — payment leak prophylactic, socket auth re-check, KDS polish
+c96bb43 feat: Sprint 6 — Kitchen Display System (live, full-screen, one-tap)
+043e625 fix: post-Sprint-5 audit — admin shell, socket lifecycle, customer metrics
+1152706 docs: update HANDOFF.md for Sprint 5 completion + Sprint 6 next steps
+b94a84c feat: Sprint 5 — Admin Dashboard (live orders, KPIs, status workflow)
+4045cd8 fix(web): cart-hydration race in checkout + auth redirects on order pages
+609ad8b fix: post-Sprint-4 audit — pricing, security, hydration, fresh-clone
 902df56 feat: Sprint 4 - Checkout & Orders (Auth + Live Tracking)
 fea650f docs: add HANDOFF.md for session continuity
-330d27f fix(api): non-existent category filter returned the entire menu
-3598be2 fix: post-review issues caught by full sprint audit
-2d49d56 fix(api): replace arbitrary Unsplash URLs with prompt-matching AI images
-822ec00 feat(web): Sprint 3 - Menu & Cart Experience
-39f7fdc fix(turbo): preserve tsbuildinfo files in build cache
-a1cf378 feat(api): Sprint 2 - Database, Auth, and Menu APIs
-16df2b1 fix(web): Sprint 1 review fixes
-5a05399 feat(web): Sprint 1 - Modern Luxe design system and home page
-f0b0943 fix: resolve lint issues from Sprint 0 verification
-4d39a59 chore: initial project scaffolding for Pizza Height
 ```
 
 Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
@@ -390,22 +412,51 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 /Users/ragab1512/Documents/KAREEM/مبرمج/Requests/
 ├── HANDOFF.md                                    ← أنت هنا
 ├── restaurant-ordering-project-plan.md           ← الخطة الكاملة (9 sprints)
+│
 ├── apps/api/prisma/schema.prisma                 ← Database schema (17 models)
 ├── apps/api/prisma/seed.ts                       ← Seed data + image URLs
-├── apps/api/src/main.ts                          ← Global setup (helmet, throttler, swagger, etc.)
-├── apps/api/src/app.module.ts                    ← Module wiring
+├── apps/api/src/main.ts                          ← Global setup (rawBody, helmet, throttler, swagger, etc.)
+├── apps/api/src/app.module.ts                    ← Module wiring (12 modules)
+├── apps/api/src/config/configuration.ts          ← Env reader + prod fail-fast
+│
 ├── apps/api/src/modules/auth/                    ← JWT + RBAC pattern للنسخ
-├── apps/api/src/modules/menu-items/              ← Pattern للـ APIs الجديدة
-├── apps/web/src/lib/api.ts                       ← Fetch wrapper
-├── apps/web/src/lib/api-types.ts                 ← Shared types
-├── apps/web/src/hooks/use-menu.ts                ← TanStack Query pattern
-├── apps/web/src/store/cart-store.ts              ← Zustand + persist pattern
-├── apps/web/src/components/menu/                 ← Menu UI patterns
-└── apps/web/src/components/cart/cart-drawer.tsx  ← Drawer pattern (Vaul)
+├── apps/api/src/modules/orders/                  ← Pricing snapshot + status transitions
+├── apps/api/src/modules/payments/                ← Provider abstraction (Paymob + Mock)
+│   ├── providers/payment-provider.interface.ts   ← الـ contract
+│   ├── providers/paymob.client.ts                ← real Paymob sandbox client
+│   └── providers/mock-paymob.client.ts           ← mock client (default)
+├── apps/api/src/modules/realtime/                ← Socket.io gateway + staff:join auth
+├── apps/api/src/modules/customers/               ← Admin customer list/detail
+│
+├── apps/web/src/lib/api.ts                       ← Fetch wrapper (Bearer + refresh-on-401)
+├── apps/web/src/lib/api-types.ts                 ← Shared types (mirror Prisma + payment session)
+├── apps/web/src/hooks/use-orders.ts              ← TanStack Query (incl. polling for CARD)
+├── apps/web/src/hooks/use-order-tracking.ts      ← Socket.io customer-side subscription
+├── apps/web/src/store/{cart,auth}-store.ts       ← Zustand + persist + hydrated flag
+├── apps/web/src/app/checkout/page.tsx            ← Multi-step + CARD redirect
+├── apps/web/src/app/payment/mock/page.tsx        ← Mock gateway form
+├── apps/web/src/app/order/{success,cancelled}/   ← Post-payment landing pages
+│
+├── apps/admin/src/app/(protected)/layout.tsx     ← Admin shell (sidebar + topbar + auth gate)
+├── apps/admin/src/app/(protected)/orders/        ← Live orders + status drawer
+├── apps/admin/src/app/kds/page.tsx               ← Kitchen Display (chrome-less, outside group)
+├── apps/admin/src/components/kds/                ← KdsCard, ElapsedTime, Chime (Web Audio)
+├── apps/admin/src/hooks/use-staff-realtime.ts    ← admin + kitchen room subscription
+└── apps/admin/src/hooks/use-kds-realtime.ts      ← kitchen room only
 ```
 
 ---
 
-**آخر تحديث:** 2026-05-17 (بعد Sprint 3 + 20 bug fixes + .env build fix)
-**الـ working tree:** نظيف (عدا `.claude/settings.json` المتراكمة)
-**الـ servers:** Docker + API + Web + Admin كلهم شغّالين أثناء كتابة هذا الملف
+## 12. الـ Modules المتاحة (للـ reference السريع)
+
+**API modules (12):** auth, categories, menu-items, orders, addresses, coupons, customers, payments, settings, upload, health, realtime
+**Web pages (10):** /, /menu, /login, /register, /checkout, /orders, /order/[id], /order/success, /order/cancelled, /payment/mock
+**Admin pages (7):** /login, /, /orders, /menu, /customers, /settings, /kds
+**Swagger tags (11):** Auth, Categories, Menu Items, Orders, Addresses, Coupons, Customers, Payments, Settings, Upload, Health
+
+---
+
+**آخر تحديث:** 2026-05-17 (بعد Sprint 7 — Payments)
+**Working tree:** نظيف (عدا `.claude/settings.json` المتراكمة)
+**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين
+**التالي:** Sprint 8 — Polish, SEO, Deploy (راجع قسم 🚀)
