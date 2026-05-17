@@ -156,7 +156,9 @@ export function Hero() {
           >
             <div className="from-surface-elevated via-surface to-background border-primary/20 relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-full border bg-gradient-to-br shadow-[var(--shadow-card)]">
               {/* Pizza visual placeholder */}
-              <div className="text-[16rem] leading-none select-none">🍕</div>
+              <div className="text-[8rem] leading-none select-none sm:text-[12rem] lg:text-[16rem]">
+                🍕
+              </div>
 
               {/* Inner highlight */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/5 via-transparent to-transparent" />

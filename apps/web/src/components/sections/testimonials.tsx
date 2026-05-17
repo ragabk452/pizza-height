@@ -21,7 +21,7 @@ const testimonials = [
   },
   {
     quote:
-      'Ordered Friday, ordered Saturday, will order again tonight. My kids think I have a pizza problem. They&apos;re right.',
+      "Ordered Friday, ordered Saturday, will order again tonight. My kids think I have a pizza problem. They're right.",
     name: 'Sara Khalil',
     role: 'Regular since day one',
     rating: 5,
