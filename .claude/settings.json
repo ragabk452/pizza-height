@@ -63,7 +63,21 @@
       "Bash(rm -f apps/api/prisma/download-images.ts)",
       "Bash(curl -s http://localhost:3000)",
       "Bash(awk '{print \"    \" $1 \" \" $NF}')",
-      "Bash(docker volume *)"
+      "Bash(docker volume *)",
+      "Bash(curl -s -o /dev/null -w \"  Status: %{http_code} | Size: %{size_download}\\\\n\" http://localhost:3000/menu)",
+      "Bash(curl -s -o /tmp/page.html -w \"    Status: %{http_code} | Size: %{size_download}b\\\\n\" http://localhost:3000)",
+      "Bash(open \"http://localhost:3000\")",
+      "Bash(open \"http://localhost:3000/menu\")",
+      "Bash(open -a Safari \"http://localhost:3000/menu\")",
+      "Bash(open -a \"Google Chrome\" --args --incognito \"http://localhost:3000/menu\")",
+      "Bash(open \"http://127.0.0.1:3000/menu\")",
+      "Bash(defaults read *)",
+      "Bash(echo \"Browser used: $\\(defaults read com.apple.LaunchServices LSHandlers)",
+      "Bash(curl -s -o /dev/null -w 'status=%{http_code} time=%{time_total}s' http://localhost:3000)",
+      "Bash(echo \"  Web /:        $\\(curl -s -o /dev/null -w 'status=%{http_code} time=%{time_total}s' http://localhost:3000\\)\")",
+      "Bash(curl -s -o /dev/null -w 'status=%{http_code} time=%{time_total}s' http://localhost:3000/menu)",
+      "Bash(echo \"  Web /menu:    $\\(curl -s -o /dev/null -w 'status=%{http_code} time=%{time_total}s' http://localhost:3000/menu\\)\")",
+      "Bash(curl -s -o /dev/null -w 'status=%{http_code} time=%{time_total}s' http://localhost:3001)"
     ],
     "additionalDirectories": [
       "/Users/ragab1512/Documents/KAREEM/مبرمج/Requests",
