@@ -13,6 +13,7 @@ import {
 import type { UserRole } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
+import { PrismaService } from '../../prisma/prisma.service';
 
 export const RealtimeEvents = {
   OrderCreated: 'order.created',
@@ -53,7 +54,10 @@ export class RealtimeGateway
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   afterInit() {
     this.logger.log('🛰️  Realtime gateway initialized at /realtime');
@@ -134,6 +138,21 @@ export class RealtimeGateway
     }
     const allowedRoles = STAFF_ROOM_ROLES[payload.room];
     if (!allowedRoles.includes(decoded.role as UserRole)) {
+      return { error: `Your role cannot join "${payload.room}"` };
+    }
+    // Re-check the DB so a deactivated / soft-deleted staff member can't
+    // keep snooping room broadcasts on a still-valid (un-rotated) access
+    // token. Mirrors what `JwtStrategy.validate()` does on the REST side.
+    const user = await this.prisma.user.findUnique({
+      where: { id: decoded.sub },
+      select: { id: true, isActive: true, deletedAt: true, role: true },
+    });
+    if (!user || !user.isActive || user.deletedAt) {
+      return { error: 'Account inactive or removed' };
+    }
+    if (!allowedRoles.includes(user.role)) {
+      // Role changed since the token was issued — refuse and let them
+      // re-login to pick up the new permissions.
       return { error: `Your role cannot join "${payload.room}"` };
     }
     void client.join(payload.room);

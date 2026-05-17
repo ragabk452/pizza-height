@@ -23,6 +23,10 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-status.dto';
 
+// NestJS / Express resolve routes in declaration order. All static-prefix
+// handlers MUST be declared before the catch-all `@Get(':id')` and the
+// `@Patch(':id/status')` handlers below, otherwise a new route like
+// `@Get('export')` declared further down would be swallowed by `:id`.
 @ApiTags('Orders')
 @ApiBearerAuth()
 @Controller('orders')
@@ -30,7 +34,7 @@ export class OrdersController {
   constructor(private readonly service: OrdersService) {}
 
   // ============================================================
-  // Customer endpoints
+  // Customer endpoints (static prefixes / create)
   // ============================================================
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -51,14 +55,8 @@ export class OrdersController {
     return this.service.findMine(user.sub);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get an order by id (customer owns it or staff)' })
-  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.service.findOne(id, { id: user.sub, type: user.type });
-  }
-
   // ============================================================
-  // Staff endpoints
+  // Staff endpoints (static prefixes)
   // ============================================================
   @Get()
   @UseGuards(RolesGuard)
@@ -95,6 +93,15 @@ export class OrdersController {
   })
   kdsBoard() {
     return this.service.kdsBoard();
+  }
+
+  // ============================================================
+  // Dynamic-id endpoints — MUST stay at the bottom
+  // ============================================================
+  @Get(':id')
+  @ApiOperation({ summary: 'Get an order by id (customer owns it or staff)' })
+  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.service.findOne(id, { id: user.sub, type: user.type });
   }
 
   @Patch(':id/status')

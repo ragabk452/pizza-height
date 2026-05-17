@@ -63,7 +63,10 @@ export function Sidebar() {
               // its own browser window/tab without losing the admin chrome
               // session.
               target={item.external ? '_blank' : undefined}
-              rel={item.external ? 'noopener' : undefined}
+              // `noopener noreferrer` per MDN best practice for target=_blank:
+              // noopener prevents the new tab from reaching back via
+              // window.opener, noreferrer also strips the Referer header.
+              rel={item.external ? 'noopener noreferrer' : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all',
                 active

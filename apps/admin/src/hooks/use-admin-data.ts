@@ -83,18 +83,30 @@ export function useTransitionOrder() {
   });
 }
 
+// KDS endpoint is gated to these roles server-side; we mirror the gate
+// client-side so we don't fire a doomed 403 request for a logged-in user
+// on the wrong role (e.g. DRIVER) — that would pollute the react-query
+// cache and flash the "Offline" dot before the page redirects.
+const KDS_ROLES = new Set(['ADMIN', 'MANAGER', 'KITCHEN']);
+
 /**
  * Kitchen Display board — active orders sorted by ETA. Polls every 30s as a
  * safety net even though the socket should keep it in sync; if the socket
  * drops without us noticing, the next poll catches up.
+ *
+ * `retry: false` because once auth is cleared (401) or the role is wrong
+ * (403), retrying just burns more failed requests on the way to the
+ * /login redirect.
  */
 export function useKdsBoard() {
-  const enabled = useAuthed();
+  const role = useAuthStore((s) => s.user?.role);
+  const enabled = useAuthed() && Boolean(role && KDS_ROLES.has(role));
   return useQuery({
     queryKey: KEYS.kds,
     queryFn: () => api<Order[]>('/orders/kds/board'),
     enabled,
     refetchInterval: 30_000,
+    retry: false,
   });
 }
 

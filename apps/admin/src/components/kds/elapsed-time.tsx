@@ -10,16 +10,21 @@ interface Props {
 }
 
 /**
- * Live "X min Y sec" counter that ticks every 5 seconds and color-shifts as
- * the wait time stretches. The two thresholds (10 / 20 minutes) match what
- * the dashboard considers "fresh" vs "running long".
+ * Live "M:SS" counter that ticks every second and color-shifts as the wait
+ * time stretches (10 / 20 minute thresholds match the dashboard's "fresh"
+ * vs "running long" signal).
  */
 export function ElapsedTime({ startedAt, className }: Props) {
   const startedMs = new Date(startedAt).getTime();
-  // Recompute on tick — useState init runs once, the interval drives updates.
-  const [elapsed, setElapsed] = useState(() => Date.now() - startedMs);
+  // Start at 0 to avoid SSR/client hydration mismatch (server's `Date.now()`
+  // and the client's first paint disagree by clock skew + network latency).
+  // The first tick fires immediately on mount so the counter snaps to the
+  // real value within ~16ms.
+  const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setElapsed(Date.now() - startedMs), 5_000);
+    const update = () => setElapsed(Date.now() - startedMs);
+    update(); // snap to real value on mount
+    const id = setInterval(update, 1_000);
     return () => clearInterval(id);
   }, [startedMs]);
 
@@ -28,7 +33,12 @@ export function ElapsedTime({ startedAt, className }: Props) {
   const tone = minutes >= 20 ? 'text-accent' : minutes >= 10 ? 'text-warning' : 'text-success';
 
   return (
-    <span className={cn('font-mono tabular-nums', tone, className)}>
+    <span
+      className={cn('font-mono tabular-nums', tone, className)}
+      // The first-paint value (0:00) differs from any client time, so
+      // explicitly tell React not to warn — we're aware of the mismatch.
+      suppressHydrationWarning
+    >
       {minutes}:{seconds.toString().padStart(2, '0')}
     </span>
   );

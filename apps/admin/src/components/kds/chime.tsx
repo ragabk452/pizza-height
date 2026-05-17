@@ -56,6 +56,13 @@ function useChime(muted: boolean) {
         ctxRef.current = new Ctx();
       }
       const ctx = ctxRef.current;
+      // Chrome/Edge start the AudioContext in `suspended` state until a
+      // user gesture. Without resume(), the first chime is silent even
+      // though scheduling succeeds. Once unlocked by the first gesture
+      // (toggle, fullscreen click, etc.) every later chime is audible.
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
       const now = ctx.currentTime;
       // Two short sine tones a fifth apart — pleasant, not alarming.
       [880, 1320].forEach((freq, i) => {

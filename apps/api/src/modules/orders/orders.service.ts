@@ -473,28 +473,44 @@ export class OrdersService {
    * sorted by `estimatedReadyAt` ascending so the most-urgent ticket sits at
    * the top of the board. We deliberately drop OUT_FOR_DELIVERY (kitchen is
    * done with it), DELIVERED, and CANCELLED.
+   *
+   * The 200-cap is generous for a single-kitchen pizza restaurant — if a
+   * shift ever blows past it we log a warning so the issue is visible in
+   * pino-pretty output rather than silently truncating the oldest tickets.
    */
+  private static readonly KDS_LIMIT = 200;
+
   async kdsBoard() {
-    return this.prisma.order.findMany({
-      where: {
-        status: {
-          in: [
-            OrderStatus.PENDING,
-            OrderStatus.CONFIRMED,
-            OrderStatus.PREPARING,
-            OrderStatus.READY,
-          ],
-        },
+    const where: Prisma.OrderWhereInput = {
+      status: {
+        in: [
+          OrderStatus.PENDING,
+          OrderStatus.CONFIRMED,
+          OrderStatus.PREPARING,
+          OrderStatus.READY,
+        ],
       },
-      orderBy: [
-        // Nulls last — orders without an ETA sink to the bottom rather than
-        // jump to the top of the board.
-        { estimatedReadyAt: { sort: 'asc', nulls: 'last' } },
-        { createdAt: 'asc' },
-      ],
-      take: 60,
-      include: this.fullInclude,
-    });
+    };
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        orderBy: [
+          // Nulls last — orders without an ETA sink to the bottom rather than
+          // jump to the top of the board.
+          { estimatedReadyAt: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'asc' },
+        ],
+        take: OrdersService.KDS_LIMIT,
+        include: this.fullInclude,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    if (total > OrdersService.KDS_LIMIT) {
+      this.logger.warn(
+        `KDS board capped: ${total} active orders, returning ${OrdersService.KDS_LIMIT}. Consider widening the limit or paginating.`,
+      );
+    }
+    return orders;
   }
 
   /**
@@ -651,7 +667,22 @@ export class OrdersService {
       orderBy: { createdAt: 'asc' as const },
     },
     address: true,
-    payment: true,
+    // Whitelist payment fields — never expose `providerPayload` (raw
+    // gateway response, may contain card metadata once Paymob lands in
+    // Sprint 7) or `idempotencyKey` (internal). `providerId` is OK to
+    // show — useful for support when reconciling a transaction.
+    payment: {
+      select: {
+        id: true,
+        amount: true,
+        method: true,
+        status: true,
+        providerName: true,
+        providerId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
     statusHistory: {
       orderBy: { createdAt: 'asc' as const },
     },

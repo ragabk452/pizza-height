@@ -130,7 +130,7 @@ packages/
 - ValidationPipe (whitelist + forbidNonWhitelisted + transform)
 - ClassSerializerInterceptor + **DecimalToNumberInterceptor** (يحول كل Decimal لـ number recursively)
 - AllExceptionsFilter موحد
-- Swagger UI على `/api/docs` (34 endpoints across 10 tags as of Sprint 5)
+- Swagger UI على `/api/docs` (35 operations across 10 tags as of Sprint 6)
 - nestjs-pino logger (pino-pretty في dev)
 - Throttler (100 req/min default)
 - JwtAuthGuard كـ APP_GUARD (مع `@Public()` decorator)
@@ -334,7 +334,6 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 5** — Admin Dashboard (Live Orders + Status Workflow)
 - ✅ **Sprint 6** — Kitchen Display System (KDS)
 - 🚀 **Sprint 7** — Payments Integration (Paymob Sandbox) (← التالي)
-- ⏳ **Sprint 7** — Payments Integration (Paymob Sandbox)
 - ⏳ **Sprint 8** — Polish, SEO, Deploy
 
 ---
@@ -355,10 +354,10 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - Listen to postMessage from iframe لـ success/failure.
 - بعد success → poll `/orders/:id` حتى `payment.status === 'PAID'` ثم redirect لـ /order/success.
 
-**Sprint 6.1 (parallel، لو الوقت سمح):**
-- Admin: Menu CRUD UI (Sprint 5.1 still deferred).
-- Admin: Settings editor.
-- Admin: Customer detail drawer.
+**Admin completionist work (parallel أو بعد Sprint 7 على ذوقك):**
+- Admin: Menu CRUD UI (Sprint 5 wireframed the read-only menu; this adds create/edit/delete + size + modifier nesting + sold-out toggle).
+- Admin: Settings editor (الـ read-only viewer موجود في Sprint 5؛ الـ editor محتاج allowlist + per-key validation عشان مين يكسر الـ pricing pipeline).
+- Admin: Customer detail drawer (الـ `useCustomerDetail` hook موجود في Sprint 5 ومش متستعمل؛ الـ list view يحتاج onClick + drawer مع order history).
 
 ### قبل البدء
 1. اقرأ هذا الملف بالكامل + قسم Sprint 5/6 details (قسم 5).

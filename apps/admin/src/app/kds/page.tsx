@@ -71,11 +71,22 @@ export default function KdsPage() {
 
   function requestFullscreen() {
     if (typeof document === 'undefined') return;
-    const el = document.documentElement;
-    if (!document.fullscreenElement) {
-      void el.requestFullscreen?.();
+    // Safari / current iPad Safari still expose the prefixed methods only,
+    // and kitchens often run on iPads — probe both.
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+    };
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void>;
+    };
+    const isFull = doc.fullscreenElement ?? doc.webkitFullscreenElement;
+    if (!isFull) {
+      const req = el.requestFullscreen ?? el.webkitRequestFullscreen;
+      if (req) void req.call(el);
     } else {
-      void document.exitFullscreen?.();
+      const exit = doc.exitFullscreen ?? doc.webkitExitFullscreen;
+      if (exit) void exit.call(doc);
     }
   }
 
