@@ -1,0 +1,19 @@
+# Railway service config — drop-in template.
+# Railway auto-detects the Dockerfile in this directory and builds with it.
+# Add Postgres + Redis as separate Railway services and reference their
+# connection strings as DATABASE_URL / REDIS_URL in the API service vars.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Railway runs Dockerfile's CMD by default — which is:
+#   prisma migrate deploy && node dist/main
+# Override here if you want to skip migrations on a given deploy:
+# startCommand = "node dist/main"

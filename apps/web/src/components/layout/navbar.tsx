@@ -38,6 +38,7 @@ export function Navbar() {
 
   return (
     <motion.header
+      role="banner"
       className={cn(
         'fixed top-0 right-0 left-0 z-50 transition-colors duration-500',
         scrolled ? 'glass border-border border-b' : 'bg-transparent',
@@ -60,7 +61,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
           {navLinks.map((link, i) => (
             <motion.div
               key={link.href}
@@ -86,14 +87,15 @@ export function Navbar() {
             size="icon"
             className="relative"
             onClick={openCart}
-            aria-label={`Open cart (${itemCount} items)`}
+            aria-label={`Open cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`}
           >
-            <ShoppingBag />
+            <ShoppingBag aria-hidden="true" />
             {itemCount > 0 && (
               <motion.span
                 key={itemCount}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
+                aria-hidden="true"
                 className="bg-primary text-background absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold"
               >
                 {itemCount > 99 ? '99+' : itemCount}
@@ -108,9 +110,11 @@ export function Navbar() {
             size="icon"
             className="md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
-            {mobileOpen ? <X /> : <Menu />}
+            {mobileOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </Button>
         </div>
       </motion.div>
@@ -118,12 +122,13 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <motion.div
+          id="mobile-nav"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           className="glass border-border border-t md:hidden"
         >
-          <nav className="flex flex-col gap-1 px-6 py-4">
+          <nav aria-label="Mobile" className="flex flex-col gap-1 px-6 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.href}

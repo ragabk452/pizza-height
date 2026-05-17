@@ -19,6 +19,7 @@ interface ErrorResponse {
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly isProduction = process.env.NODE_ENV === 'production';
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -40,9 +41,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
         error = b.error ?? exception.name;
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name;
-      this.logger.error(exception.stack);
+      // Non-HttpException: always log internally so we can debug,
+      // but never echo internal Error.message / stack to the client
+      // in production — it can leak implementation details (driver errors,
+      // file paths, ORM messages, schema names).
+      this.logger.error(exception.stack ?? exception.message);
+      if (!this.isProduction) {
+        message = exception.message;
+        error = exception.name;
+      }
     }
 
     const errorResponse: ErrorResponse = {

@@ -10,6 +10,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
@@ -60,6 +61,7 @@ export class PaymentsController {
    * middleware on this path.
    */
   @Public()
+  @SkipThrottle() // Paymob retries up to 10× with backoff — throttling would drop legitimate callbacks
   @Post('webhook/paymob')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Paymob webhook — HMAC-verified, public endpoint' })

@@ -6,6 +6,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
@@ -21,6 +22,11 @@ import {
 } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+// Tight rate-limit on credential-handling endpoints to slow down
+// brute-force / credential-stuffing attacks. Default global limit is
+// 100/min — these get 5/min per IP.
+const AUTH_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
+
 class RefreshDto {
   @IsString()
   refreshToken!: string;
@@ -33,6 +39,7 @@ export class AuthController {
 
   // ========== Staff ==========
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @Post('staff/login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Staff login (admin/manager/kitchen/driver)' })
@@ -42,6 +49,7 @@ export class AuthController {
 
   // ========== Customer ==========
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @Post('customer/register')
   @ApiOperation({ summary: 'Register a new customer' })
   customerRegister(@Body() dto: RegisterCustomerDto) {
@@ -49,6 +57,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @Post('customer/login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Customer login (phone + password)' })
@@ -58,6 +67,7 @@ export class AuthController {
 
   // ========== Shared ==========
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Exchange a refresh token for a new access token' })

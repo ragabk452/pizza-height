@@ -186,6 +186,44 @@ packages/
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
 
+**Sprint 8 — Polish + SEO + Deploy-readiness (2026-05-17):**
+- **SEO foundation:**
+  - `apps/web/src/components/seo/json-ld.tsx` — server-component `<script type="application/ld+json">` builder. Exports `RestaurantJsonLd`, `OrganizationJsonLd`, `WebsiteJsonLd` (mounted in root layout), `MenuJsonLd` + `BreadcrumbJsonLd` (mounted in `/menu/layout.tsx`).
+  - `apps/web/src/app/menu/layout.tsx` — new server component that wraps the existing client `page.tsx`, server-fetches categories + items from API with `next: { revalidate: 3600 }`, and renders a full schema.org `Menu` with 6 `MenuSection`s + 26 `MenuItem`s + 26 `Offer`s. Falls back gracefully (no MenuJsonLd) if API unreachable.
+  - `apps/web/src/app/sitemap.ts` + `apps/web/src/app/robots.ts` — Next.js convention routes. Sitemap lists public pages (/, /menu, /login, /register). Robots allows /, disallows authed routes (/checkout, /order/, /orders, /payment/, /api/).
+  - `apps/admin/src/app/robots.ts` — disallows everything (admin must not be indexed).
+  - Root `apps/web/src/app/layout.tsx` metadata expanded: `alternates.languages` (en-US + ar-EG), `openGraph.images` (1200×630 reference to `/og-image.png`), `twitter.creator`, `robots.googleBot`, `formatDetection`, full `keywords` list.
+- **A11y improvements:**
+  - Skip-to-content link in root layout (hidden until focused, jumps to `#main-content`).
+  - Every page-level `<main>` now has `id="main-content"` (web home, menu, checkout, orders, order/[id], order/success, order/cancelled, payment/mock, AuthShell for /login + /register).
+  - `globals.css`: `@media (prefers-reduced-motion: reduce)` global override — animations/transitions/scroll-behavior all cut to 0.01ms when the OS preference is set.
+  - Navbar: `role="banner"` on header, `aria-label="Primary"` / `"Mobile"` on the two `<nav>`s, `aria-expanded` + `aria-controls` on the mobile menu toggle, icons inside buttons marked `aria-hidden`, cart badge is `aria-hidden` (count is announced via the button label instead — fixes redundant SR reading).
+- **Performance:**
+  - `apps/web/next.config.ts` + `apps/admin/next.config.ts` — bundle analyzer (gated by `ANALYZE=true`), `images.remotePatterns` allowlist (Unsplash + Cloudinary), AVIF/WebP formats, `experimental.optimizePackageImports` for `lucide-react`, `framer-motion`, `sonner`, security headers (X-Frame-Options, Referrer-Policy, Permissions-Policy on web; +X-Robots-Tag on admin).
+  - `pnpm --filter @pizza-height/{web,admin} analyze` opens an interactive treemap.
+- **Production hardening (API):**
+  - `main.ts` helmet: `contentSecurityPolicy: false` → explicit directives that still let Swagger work (`unsafe-inline`/`unsafe-eval` only for script/style — needed by the bundled Swagger UI). `crossOriginEmbedderPolicy: false`, `crossOriginResourcePolicy: 'cross-origin'`.
+  - `AllExceptionsFilter`: non-`HttpException` errors no longer echo `error.message` / `error.name` to the client in production — only the generic `"Internal server error"` goes out. Stack traces still go to internal logger.
+  - Auth controller: `@Throttle({ default: { limit: 5, ttl: 60_000 } })` on `/auth/staff/login`, `/auth/customer/login`, `/auth/customer/register`. `/auth/refresh` gets 20/min (legitimate auto-refresh on 401 was hitting the cap). Default elsewhere stays 100/min.
+  - Payments: `@SkipThrottle()` on `/payments/webhook/paymob` — Paymob retries up to 10× with backoff and would otherwise hit the global limit.
+  - `prisma:migrate:deploy` script added for the production container CMD.
+- **Sprint 7 leftover bug fix:** `CreateSessionParams` interface didn't declare `merchantOrderId` even though both the service and mock client used it — `pnpm type-check` was failing. Added it to the interface (real `PaymobClient` ignores it).
+- **Deploy-readiness:**
+  - `apps/api/Dockerfile` (multi-stage: base → deps → build → runner; non-root user, tini PID 1, runs `prisma migrate deploy && node dist/main` as CMD). `apps/api/.dockerignore` keeps the build context small. **Important gotcha discovered + fixed:** pnpm's `apps/api/node_modules` is a tree of symlinks that point `../../../../node_modules/.pnpm/...` — so the runner stage MUST preserve the workspace-root `/repo/node_modules` *and* the apps/api one *and* the packages/ folder, otherwise every `require('@nestjs/...')` blows up with MODULE_NOT_FOUND. The runner image keeps the full `/repo/{node_modules,packages,apps/api,package.json,pnpm-workspace.yaml}` shape and runs from `/repo/apps/api`.
+  - `apps/api/railway.toml` (Dockerfile builder + `/api/v1/health` healthcheck + ON_FAILURE restart policy with 5 retries).
+  - `apps/web/vercel.json` + `apps/admin/vercel.json` (framework=nextjs, monorepo-aware install/build commands via Turborepo, `turbo-ignore` so a touch on API alone skips a frontend rebuild, fra1 region).
+  - `apps/{web,admin,api}/.env.production.example` — full templates with notes (NEXT_PUBLIC_* baked at build, CORS_ORIGINS must be comma-separated, JWT secrets generated with `openssl rand -base64 64`).
+  - README updated with full Vercel + Railway deploy instructions.
+- **Verified live** (after restarting all three servers fresh against the new builds):
+  - `/sitemap.xml` returns valid XML with 4 URLs; `/robots.txt` (web) allows `/`, disallows authed routes; `/robots.txt` (admin) disallows all.
+  - Home page emits Restaurant/Organization/WebSite/PostalAddress/GeoCoordinates/OpeningHoursSpecification/SearchAction JSON-LD. Menu page adds BreadcrumbList + Menu + 6 MenuSection + 26 MenuItem + 26 Offer.
+  - Helmet on `/health`: CSP set with explicit directives, X-Frame-Options=SAMEORIGIN, X-Content-Type-Options=nosniff. Web/admin: Permissions-Policy + Referrer-Policy + X-Robots-Tag (admin) set.
+  - Auth throttle confirmed: 5 attempts → 400 (bad creds), 6th → 429. Categories 12/12 successful.
+  - Webhook `SkipThrottle` confirmed: 10× POSTs → all 401 (HMAC fail), zero 429.
+  - Error filter strips: 401 returns clean `{statusCode, message, error, ...}` JSON, no stack.
+  - Docker image: `docker build -f apps/api/Dockerfile -t pizza-height-api .` completes; `docker run` loads `dist/main.js` cleanly, instantiates Nest, and fails fast on missing `DATABASE_URL` (the intended prod behavior — Railway sets it from the Postgres plugin).
+- **Deferred to Sprint 9:** actual deploy (waiting on user's Vercel + Railway accounts), Admin Menu CRUD UI, Settings editor, Customer detail drawer.
+
 **Sprint 7 — Payments (Paymob Sandbox + Mock) (2026-05-17):**
 - Backend: new `PaymentsModule` with `PaymentProvider` interface + two implementations:
   - `PaymobClient` — real Paymob sandbox client (auth → register order → payment_key → iframe URL; HMAC-SHA512 webhook verification over Paymob's ordered field list).
@@ -322,6 +360,9 @@ pnpm dev   # or start each separately:
 12. **Webhook raw body:** `main.ts` بيـ enable `rawBody: true` عشان `/payments/webhook/paymob` يقدر يـ verify HMAC على exact bytes. أي middleware قبل الـ handler يـ re-serializes هيـ break الـ signature.
 13. **Admin shell route group:** الصفحات المحمية في الأدمن (`/`, `/orders`, `/menu`, `/customers`, `/settings`) في `(protected)` route group بـ shared layout. الـ `/kds` و `/login` خارج الـ group لأنهم chrome-less. لما تضيف صفحة admin جديدة، حطها داخل `(protected)`.
 14. **Realtime singleton socket:** كل من web (`use-order-tracking`) و admin (`use-staff-realtime`, `use-kds-realtime`) عنده module-level singleton للـ Socket.io connection. **مش بنـ null الـ singleton على disconnect** عشان socket.io built-in reconnection يـ keep نفس الـ instance — لو عملنا null هتفتح socket تاني والـ events هتـ fire مرتين.
+15. **Dockerfile runner preserves /repo workspace shape:** الـ apps/api/Dockerfile runner stage بيـ copy الـ root `node_modules/`, `packages/`, و `apps/api/` بنفس الـ layout الـ workspace. ده **مش optional** — pnpm symlinks بـ resolve `../../../../node_modules/.pnpm/...` فلو شلت الـ root node_modules أو غيّرت الـ working directory تـ break كل الـ requires بـ MODULE_NOT_FOUND. أي تعديل على الـ Dockerfile لازم يحافظ على الـ /repo/{node_modules,packages,apps/api}/ structure والـ WORKDIR /repo/apps/api.
+16. **Auth throttle = 5/min على login/register/staff-login + 20/min على refresh.** الـ rest على 100/min default. لو هتـ add endpoint جديد بـ credentials handling، حط `@Throttle({ default: { limit: 5, ttl: 60_000 } })` عليه. لو هتـ add endpoint بـ retry-friendly external trigger (webhook، callback)، حط `@SkipThrottle()`.
+17. **AllExceptionsFilter في prod ميـ leak `error.message` من non-HttpException.** لو الـ user/customer يـ trigger 500 من unknown error، هيشوف `"Internal server error"` بس. الـ stack بـ logger فقط. لو هتـ throw business error واضح للـ customer، استخدم HttpException (Bad/Forbidden/Conflict/etc) — هتـ pass through clean.
 
 ---
 
@@ -372,7 +413,8 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 5** — Admin Dashboard (Live Orders + Status Workflow)
 - ✅ **Sprint 6** — Kitchen Display System (KDS)
 - ✅ **Sprint 7** — Payments Integration (Paymob Sandbox + Mock provider)
-- 🚀 **Sprint 8** — Polish, SEO, Deploy (← التالي)
+- ✅ **Sprint 8** — Polish, SEO, Deploy-readiness (local phase done, actual deploy pending)
+- 🚀 **Sprint 9** — Deploy + Admin completionist work (← التالي)
 
 ---
 
@@ -456,7 +498,7 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 
 ---
 
-**آخر تحديث:** 2026-05-17 (بعد Sprint 7 — Payments)
-**Working tree:** نظيف (عدا `.claude/settings.json` المتراكمة)
-**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين
-**التالي:** Sprint 8 — Polish, SEO, Deploy (راجع قسم 🚀)
+**آخر تحديث:** 2026-05-17 (بعد Sprint 8 — Polish + SEO + Deploy-readiness)
+**Working tree:** modified (Sprint 8 changes not committed yet)
+**Servers wile writing:** Docker + API + Web + Admin كلهم شغّالين (restarted على الـ Sprint 8 builds)
+**التالي:** Sprint 9 — Deploy (Vercel + Railway) + Admin Menu CRUD / Settings editor / Customer detail drawer

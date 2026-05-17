@@ -19,6 +19,10 @@ export interface CreateSessionParams {
   currency: string; // "USD" / "EGP"
   /** Our internal order number, e.g. PH-2026-0042 — used as the merchant_order_id. */
   merchantOrderRef: string;
+  /** Our internal Order.id (cuid). Mock provider echoes it back so the
+   * mock page can route to /order/[id] on cancel. The real Paymob client
+   * doesn't need it. */
+  merchantOrderId: string;
   billing: BillingData;
 }
 

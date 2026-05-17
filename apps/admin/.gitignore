@@ -32,8 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-# ...but keep the example committed so a fresh clone can `cp -n .env.example .env`.
+# ...but keep the examples committed so a fresh clone can `cp -n .env.example .env`
+# and so deploy templates are visible in the repo.
 !.env.example
+!.env.production.example
 
 # vercel
 .vercel

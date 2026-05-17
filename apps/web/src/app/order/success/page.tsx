@@ -111,7 +111,10 @@ function SuccessInner() {
     <>
       <Navbar />
       {showConfetti && <Confetti />}
-      <main className="bg-mesh-gold relative min-h-screen overflow-hidden pt-32 pb-24">
+      <main
+        id="main-content"
+        className="bg-mesh-gold relative min-h-screen overflow-hidden pt-32 pb-24"
+      >
         <div className="mx-auto max-w-2xl px-6 text-center lg:px-8">
           <motion.div
             initial={{ scale: 0.4, opacity: 0, rotate: -20 }}

@@ -34,7 +34,7 @@ export default function MenuPage() {
     <>
       <Navbar />
 
-      <main className="flex-1 pt-32 pb-16">
+      <main id="main-content" className="flex-1 pt-32 pb-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           {/* Header */}
           <motion.div

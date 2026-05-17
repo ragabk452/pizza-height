@@ -49,7 +49,7 @@ export default function OrderTrackingPage() {
     return (
       <>
         <Navbar />
-        <main className="bg-mesh-gold grid min-h-screen place-items-center pt-24">
+        <main id="main-content" className="bg-mesh-gold grid min-h-screen place-items-center pt-24">
           <div className="text-center">
             <h2 className="font-display text-foreground text-3xl">Order not found</h2>
             <p className="text-muted mt-2 text-sm">
@@ -67,7 +67,7 @@ export default function OrderTrackingPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-mesh-gold min-h-screen pt-28 pb-16">
+      <main id="main-content" className="bg-mesh-gold min-h-screen pt-28 pb-16">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1fr_22rem] lg:px-8">
           {/* Left: timeline */}
           <div>

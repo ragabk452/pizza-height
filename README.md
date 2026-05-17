@@ -118,6 +118,50 @@ Then open:
 
 ---
 
+## 🚢 Deploying
+
+The platform splits into three independently-deployable services:
+
+| Service | Hosting | URL pattern |
+|---------|---------|-------------|
+| `apps/web` (customer) | Vercel | `pizza-height.vercel.app` |
+| `apps/admin` (staff) | Vercel | `admin-pizza-height.vercel.app` |
+| `apps/api` (NestJS) | Railway (or Render / Fly) | `pizza-height-api.up.railway.app` |
+| Postgres + Redis | Railway managed services | — |
+
+### One-time setup
+
+1. **Railway** — create a new project, then:
+   - Add a **PostgreSQL** plugin → copy `DATABASE_URL` to clipboard.
+   - Add a **Redis** plugin → copy `REDIS_URL`.
+   - Create a new service from this GitHub repo, **Root Directory** = `apps/api`. Railway auto-detects the [`Dockerfile`](./apps/api/Dockerfile) and the [`railway.toml`](./apps/api/railway.toml) health-check config.
+   - Paste every variable from [`apps/api/.env.production.example`](./apps/api/.env.production.example) into the service's **Variables** tab. Generate JWT secrets with `openssl rand -base64 64`. The API fails fast at boot if `JWT_SECRET` / `JWT_REFRESH_SECRET` / `DATABASE_URL` are missing in production — this is intentional.
+   - Deploy. The container runs `prisma migrate deploy` before starting, so the DB schema applies automatically. Seed it once from your laptop: `DATABASE_URL='<railway-public-url>' pnpm --filter @pizza-height/api prisma:seed`.
+
+2. **Vercel — Web** — create a new project, then:
+   - **Root Directory:** `apps/web`. Vercel reads [`apps/web/vercel.json`](./apps/web/vercel.json) and uses `pnpm turbo run build` so the monorepo is wired up automatically.
+   - Paste vars from [`apps/web/.env.production.example`](./apps/web/.env.production.example) into **Environment Variables** (Production scope). Note: `NEXT_PUBLIC_*` are **baked into the build** — any change requires a redeploy.
+   - Deploy.
+
+3. **Vercel — Admin** — same as web but **Root Directory** = `apps/admin`. Use [`apps/admin/.env.production.example`](./apps/admin/.env.production.example).
+
+4. **Wire CORS** — once all three are live, set the API's `CORS_ORIGINS` to a comma-separated list of both Vercel domains (and any custom domain), then redeploy the API.
+
+### Subsequent deploys
+
+- Push to `main` → Vercel rebuilds both frontends automatically.
+- Push to `main` → Railway rebuilds the API automatically; migrations run on container start.
+- The web and admin `vercel.json` files use `turbo-ignore` so a commit that touches only `apps/api` skips a frontend rebuild.
+
+### Local bundle analysis
+
+```bash
+pnpm --filter @pizza-height/web analyze   # opens an interactive treemap
+pnpm --filter @pizza-height/admin analyze
+```
+
+---
+
 ## 📋 Roadmap
 
 See [restaurant-ordering-project-plan.md](./restaurant-ordering-project-plan.md) for the full 9-sprint plan.

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@pizza-height/web...",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "ignoreCommand": "cd ../.. && npx turbo-ignore @pizza-height/web",
+  "outputDirectory": ".next",
+  "regions": ["fra1"]
+}

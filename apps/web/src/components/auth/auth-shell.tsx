@@ -22,7 +22,10 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <main className="bg-mesh-gold relative grid min-h-screen overflow-hidden lg:grid-cols-2">
+    <main
+      id="main-content"
+      className="bg-mesh-gold relative grid min-h-screen overflow-hidden lg:grid-cols-2"
+    >
       {/* Side panel — only on lg+ */}
       <aside className="bg-surface relative hidden overflow-hidden lg:flex">
         <div className="absolute inset-0">

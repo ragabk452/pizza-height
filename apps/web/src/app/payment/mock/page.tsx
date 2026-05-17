@@ -66,7 +66,10 @@ function MockPaymentInner() {
   // Order number is the merchant ref Paymob would echo back; show it as the
   // "merchant" so the page feels like a real gateway.
   return (
-    <main className="bg-mesh-gold relative min-h-screen overflow-hidden pt-12 pb-24 sm:pt-20">
+    <main
+      id="main-content"
+      className="bg-mesh-gold relative min-h-screen overflow-hidden pt-12 pb-24 sm:pt-20"
+    >
       <div className="mx-auto w-full max-w-xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}

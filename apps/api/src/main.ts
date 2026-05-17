@@ -26,8 +26,32 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  // Security
-  app.use(helmet({ contentSecurityPolicy: false }));
+  // Security — explicit CSP that still allows Swagger UI to function.
+  // Swagger requires inline scripts/styles (its bundled UI), so we relax
+  // script-src / style-src. The API doesn't render HTML for end-users,
+  // so this exposure is limited to the docs route.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          fontSrc: ["'self'", 'data:', 'https:'],
+          frameAncestors: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          scriptSrcAttr: ["'none'"],
+          styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+          connectSrc: ["'self'"],
+          upgradeInsecureRequests:
+            process.env.NODE_ENV === 'production' ? [] : null,
+        },
+      },
+      crossOriginEmbedderPolicy: false, // would break Swagger asset loading
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.enableCors({
     origin: config.get<string[]>('corsOrigins') ?? [
       'http://localhost:3000',

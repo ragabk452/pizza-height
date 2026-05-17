@@ -1,0 +1,29 @@
+# Anything not needed inside the container — keeps the build context small
+# and the final image small too.
+
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.github
+.husky
+.vscode
+.idea
+.DS_Store
+
+apps/web
+apps/admin
+packages/ui
+
+# Local dev / docs
+README.md
+HANDOFF.md
+restaurant-ordering-project-plan.md
+docker-compose.yml
+*.log

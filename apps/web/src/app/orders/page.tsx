@@ -45,7 +45,7 @@ export default function OrdersPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-mesh-gold min-h-screen pt-28 pb-16">
+      <main id="main-content" className="bg-mesh-gold min-h-screen pt-28 pb-16">
         <div className="mx-auto max-w-4xl px-6 lg:px-8">
           <p className="text-muted text-xs tracking-[0.2em] uppercase">
             Hello, {customer.name.split(' ')[0]}
