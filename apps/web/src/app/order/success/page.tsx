@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Clock, Loader2, MapPin } from 'lucide-react';
+import { ArrowRight, Check, Clock, CreditCard, Loader2, MapPin } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import { Confetti } from '@/components/order/confetti';
-import { useOrder } from '@/hooks/use-orders';
+import { useMyOrders, useOrder } from '@/hooks/use-orders';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function OrderSuccessPage() {
@@ -28,36 +28,60 @@ export default function OrderSuccessPage() {
 function SuccessInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const orderId = params.get('id') ?? undefined;
-  // Confetti is one-shot — unmount after the animation finishes so the 80
-  // absolutely-positioned spans (z-30) don't sit invisibly over the page.
-  const [showConfetti, setShowConfetti] = useState(true);
+
+  // Two entry points:
+  //   - From our own checkout / mock page: `?id=<cuid>` (direct lookup).
+  //   - From a real payment gateway redirect: `?orderNumber=PH-2026-XXXX`
+  //     (Paymob echoes our merchant_order_id back, not the cuid).
+  // For the orderNumber case we resolve it via the customer's own order list.
+  const orderIdParam = params.get('id') ?? undefined;
+  const orderNumberParam = params.get('orderNumber') ?? undefined;
+  const { data: myOrders } = useMyOrders();
+  const resolvedId =
+    orderIdParam ??
+    (orderNumberParam ? myOrders?.find((o) => o.orderNumber === orderNumberParam)?.id : undefined);
+
+  // Auth guard
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const customer = useAuthStore((s) => s.customer);
   useEffect(() => {
+    if (hydrated && !customer && (orderIdParam || orderNumberParam)) {
+      const back = orderIdParam
+        ? `/order/success?id=${orderIdParam}`
+        : `/order/success?orderNumber=${orderNumberParam}`;
+      router.replace(`/login?next=${encodeURIComponent(back)}`);
+    }
+  }, [hydrated, customer, orderIdParam, orderNumberParam, router]);
+
+  useEffect(() => {
+    if (!orderIdParam && !orderNumberParam) router.replace('/menu');
+  }, [orderIdParam, orderNumberParam, router]);
+
+  const { data: order, isLoading } = useOrder(resolvedId, {
+    pollWhilePending: true,
+  });
+
+  // Confetti is one-shot per page load — fire once payment is confirmed
+  // (don't celebrate before the webhook lands for CARD orders). A ref
+  // gates the "already fired" flag so the effect doesn't double-set state
+  // (which the React Compiler lint rule rightly flags).
+  const isPaid = order?.payment?.method === 'CASH' || order?.payment?.status === 'PAID';
+  const firedRef = useRef(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  useEffect(() => {
+    if (!isPaid || firedRef.current) return;
+    firedRef.current = true;
+    setShowConfetti(true);
     const t = setTimeout(() => setShowConfetti(false), 5000);
     return () => clearTimeout(t);
-  }, []);
-  const { data: order, isLoading } = useOrder(orderId);
-  // The ETA depends on the wall-clock; tick once a minute so it stays accurate
-  // without re-rendering on every frame.
+  }, [isPaid]);
+
+  // ETA ticker
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    if (!orderId) router.replace('/menu');
-  }, [orderId, router]);
-
-  // If the user lands here without a session (e.g. they cleared cookies after
-  // placing the order), bounce them to /login so useOrder can succeed.
-  const hydrated = useAuthStore((s) => s.hydrated);
-  const customer = useAuthStore((s) => s.customer);
-  useEffect(() => {
-    if (hydrated && !customer && orderId) {
-      router.replace(`/login?next=${encodeURIComponent(`/order/success?id=${orderId}`)}`);
-    }
-  }, [hydrated, customer, orderId, router]);
 
   if (isLoading || !order) {
     return (
@@ -69,6 +93,19 @@ function SuccessInner() {
 
   const estReady = order.estimatedReadyAt ? new Date(order.estimatedReadyAt) : null;
   const etaMinutes = estReady ? Math.max(Math.round((estReady.getTime() - now) / 60_000), 0) : null;
+
+  const paymentMethod = order.payment?.method ?? 'CASH';
+  const paymentLabel =
+    paymentMethod === 'CASH'
+      ? 'Total (cash on delivery)'
+      : paymentMethod === 'CARD'
+        ? 'Total paid by card'
+        : 'Total paid';
+
+  // While the CARD payment is still in flight, soften the celebration: the
+  // big check stays, but we show a "Confirming payment…" pill and skip the
+  // tracking CTA until the payment lands.
+  const awaitingPayment = order.payment?.method !== 'CASH' && order.payment?.status === 'PENDING';
 
   return (
     <>
@@ -91,7 +128,7 @@ function SuccessInner() {
             transition={{ delay: 0.25, duration: 0.55 }}
             className="font-display text-foreground mt-8 text-5xl sm:text-6xl"
           >
-            Order placed
+            {awaitingPayment ? 'Almost there' : 'Order placed'}
           </motion.h1>
 
           <motion.p
@@ -100,8 +137,21 @@ function SuccessInner() {
             transition={{ delay: 0.4, duration: 0.55 }}
             className="text-muted mt-3 text-lg"
           >
-            Thank you. Your masterpiece is on its way to the wood-fired oven.
+            {awaitingPayment
+              ? 'Confirming your payment with the bank — this usually takes a few seconds.'
+              : 'Thank you. Your masterpiece is on its way to the wood-fired oven.'}
           </motion.p>
+
+          {awaitingPayment && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-warning/10 text-warning border-warning/30 mx-auto mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs"
+            >
+              <Loader2 className="size-3.5 animate-spin" />
+              Confirming payment…
+            </motion.div>
+          )}
 
           {/* Number card */}
           <motion.div
@@ -142,15 +192,20 @@ function SuccessInner() {
             </div>
             <div className="bg-surface/40 border-border rounded-2xl border p-5 text-left">
               <div className="text-primary flex items-center gap-2 text-xs tracking-wide uppercase">
-                <MapPin className="size-3.5" /> Total paid (on delivery)
+                {paymentMethod === 'CARD' ? (
+                  <CreditCard className="size-3.5" />
+                ) : (
+                  <MapPin className="size-3.5" />
+                )}{' '}
+                {paymentLabel}
               </div>
               <p className="text-foreground font-display mt-2 text-2xl tabular-nums">
                 ${order.total.toFixed(2)}
               </p>
               <p className="text-muted mt-1 text-xs">
                 {order.items.reduce((s, i) => s + i.quantity, 0)}{' '}
-                {order.items.length === 1 ? 'item' : 'items'} ·{' '}
-                {order.payment?.method.toLowerCase() ?? 'cash'}
+                {order.items.length === 1 ? 'item' : 'items'} · {paymentMethod.toLowerCase()}
+                {order.payment && ` · ${order.payment.status.toLowerCase()}`}
               </p>
             </div>
           </motion.div>
@@ -162,7 +217,7 @@ function SuccessInner() {
             transition={{ delay: 0.85, duration: 0.55 }}
             className="mt-10 flex flex-wrap items-center justify-center gap-3"
           >
-            <Button asChild size="lg">
+            <Button asChild size="lg" disabled={awaitingPayment}>
               <Link href={`/order/${order.id}`}>
                 Track this order <ArrowRight className="size-4" />
               </Link>

@@ -182,6 +182,22 @@ packages/
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
 
+**Sprint 7 — Payments (Paymob Sandbox + Mock) (2026-05-17):**
+- Backend: new `PaymentsModule` with `PaymentProvider` interface + two implementations:
+  - `PaymobClient` — real Paymob sandbox client (auth → register order → payment_key → iframe URL; HMAC-SHA512 webhook verification over Paymob's ordered field list).
+  - `MockPaymobClient` — drop-in replacement that uses the web's `/payment/mock` page as the "iframe". Same `PaymentProvider` shape, HMAC-SHA512 over the JSON body so the verification code path is identical.
+- Factory in `PaymentsModule` picks Real vs Mock based on `PAYMOB_API_KEY`/`INTEGRATION_ID`/`IFRAME_ID`/`HMAC_SECRET` being set AND none matching the `your_...` placeholder pattern. Default for portfolio is mock.
+- New endpoints (3): `POST /payments/checkout-session/:orderId` (customer-auth, validates ownership + CARD method + not-already-PAID), `POST /payments/webhook/paymob` (public, raw-body HMAC-verified, idempotent), `POST /payments/mock/complete` (mock-only — signs a mock payload and feeds it through the real webhook handler).
+- `main.ts` enables `rawBody: true` so the webhook handler can verify HMAC over the exact bytes the gateway sent.
+- Webhook handler: finds Payment by stored `idempotencyKey` (with fallback to `merchantOrderRef`), updates Payment.status, advances Order.status (PENDING→CONFIRMED) on success, broadcasts realtime to `admin`/`kitchen`/`order:{id}` rooms. Replayed callbacks return `alreadyApplied`.
+- Frontend (apps/web):
+  - Checkout: CARD option enabled (was disabled with "Sprint 7" placeholder). After `placeOrder` succeeds, calls `useCreateCheckoutSession` then `window.location.href = session.iframeUrl`.
+  - `/payment/mock` page — gold-bordered "Pizza Height" mock gateway with cardholder/number/exp/cvc pre-filled, `Pay {amount}` + "Cancel and decline" buttons. Sandbox banner discloses mock mode prominently.
+  - `/order/cancelled` — luxe failure page for CARD declines, cart stays for retry.
+  - `/order/success` — accepts `?id=` or `?orderNumber=` (Paymob echoes the latter). Shows "Almost there — Confirming payment…" while `payment.status === 'PENDING' && method !== 'CASH'`. Polls `/orders/:id` every 2s until PAID. Confetti gated on payment confirmation.
+- `.env.example` updated: `PAYMOB_*` moved out of "Planned", documented as optional (blank → mock), new `PAYMOB_MOCK_BASE_URL`.
+- Verified 19/19 flows in Puppeteer + real Chrome: mock provider auto-detection, mock page render, full CARD success flow (PENDING→PAID via webhook → order CONFIRMED), success page polls + flips, CARD failure path preserves order for retry, HMAC tampering → 401, idempotency (replay → alreadyApplied), cross-customer auth (Sara → 403 on Layla's order), CARD UI enabled, plus 8 regression checks for Sprints 0-6.
+
 **Sprint 6 — Kitchen Display System (2026-05-17):**
 - Backend: new `GET /orders/kds/board` endpoint returning active orders (PENDING/CONFIRMED/PREPARING/READY) sorted by `estimatedReadyAt` asc with nulls last. Capped at 60. Gated to ADMIN/MANAGER/KITCHEN roles.
 - Frontend (apps/admin): new `/kds` route OUTSIDE the `(protected)` route group — full-screen chrome-less view designed for kitchen tablets. Header bar has filter pills (All / New / Confirmed / Preparing / Ready), connection-status dot, audio chime toggle (Web Audio API, no audio file shipped), fullscreen button, and exit-X. Body is a responsive grid of `KdsCard`s.
@@ -333,31 +349,33 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 4** — Checkout & Orders (Auth + Live Tracking)
 - ✅ **Sprint 5** — Admin Dashboard (Live Orders + Status Workflow)
 - ✅ **Sprint 6** — Kitchen Display System (KDS)
-- 🚀 **Sprint 7** — Payments Integration (Paymob Sandbox) (← التالي)
-- ⏳ **Sprint 8** — Polish, SEO, Deploy
+- ✅ **Sprint 7** — Payments Integration (Paymob Sandbox + Mock provider)
+- 🚀 **Sprint 8** — Polish, SEO, Deploy (← التالي)
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 7: Payments Integration (Paymob Sandbox)
+## 🚀 الخطوة التالية — Sprint 8: Polish, SEO, Deploy
 
 ### المحتوى المخطط
 
-**Backend (apps/api):**
-- `PaymentsModule` يستهدف Paymob sandbox (test mode).
-- Flow: `POST /orders` ينشئ الـ Order ثم لو `paymentMethod=CARD` يولد iframe URL → الـ frontend يفتحها → الـ user يدفع → Paymob callback (HMAC-verified) يحدث `payment.status` لـ PAID + يدفع `order.status` لـ CONFIRMED تلقائياً.
-- Webhook endpoint: `POST /payments/webhook/paymob` (public، HMAC-verified).
-- DTOs + service + controller جديدة. `Payment.providerPayload` (Json) موجود بالفعل لتخزين response الكامل.
-- Settings: `PAYMOB_API_KEY` / `PAYMOB_INTEGRATION_ID` / `PAYMOB_IFRAME_ID` / `PAYMOB_HMAC_SECRET` (موجودين فاضيين في `.env.example` تحت "Planned" section).
+**Polish & SEO:**
+- Open Graph + Twitter cards بصورة hero للمطعم.
+- Sitemap + robots.txt.
+- Structured data (Restaurant + Menu schema.org JSON-LD).
+- Performance audit: bundle analyzer، image lazy-load، font subset.
+- A11y audit: ARIA على كل interactive element، focus traps في الـ drawers، keyboard nav كاملة.
+- Production hardening: helmet CSP غير `false`، rate-limit على login/register (مؤجلة من Sprint 5 audit)، error message stripping في prod.
 
-**Frontend (apps/web):**
-- Checkout: لو الـ user اختار CARD → بعد placeOrder → بدل redirect لـ /order/success مباشرة، redirect لـ Paymob iframe (modal أو page).
-- Listen to postMessage from iframe لـ success/failure.
-- بعد success → poll `/orders/:id` حتى `payment.status === 'PAID'` ثم redirect لـ /order/success.
+**Deploy:**
+- Vercel للـ web + admin (free tier).
+- Railway / Render للـ API (free tier + Postgres + Redis).
+- Production secrets setup + CORS origins للـ deployed URLs.
+- Custom domain (لو متاح) + README بـ live demo links.
 
-**Admin completionist work (parallel أو بعد Sprint 7 على ذوقك):**
+**Admin completionist work (parallel — لو الوقت سمح):**
 - Admin: Menu CRUD UI (Sprint 5 wireframed the read-only menu; this adds create/edit/delete + size + modifier nesting + sold-out toggle).
-- Admin: Settings editor (الـ read-only viewer موجود في Sprint 5؛ الـ editor محتاج allowlist + per-key validation عشان مين يكسر الـ pricing pipeline).
-- Admin: Customer detail drawer (الـ `useCustomerDetail` hook موجود في Sprint 5 ومش متستعمل؛ الـ list view يحتاج onClick + drawer مع order history).
+- Admin: Settings editor (read-only viewer موجود؛ الـ editor محتاج allowlist + per-key validation).
+- Admin: Customer detail drawer (الـ `useCustomerDetail` hook موجود ومش متستعمل).
 
 ### قبل البدء
 1. اقرأ هذا الملف بالكامل + قسم Sprint 5/6 details (قسم 5).

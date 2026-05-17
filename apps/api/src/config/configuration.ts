@@ -49,6 +49,17 @@ export default () => ({
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
+  // Paymob sandbox. Leave any value blank to fall back to the in-process
+  // MockPaymobClient (which still exercises the full session→iframe→webhook
+  // flow against the web app's /payment/mock page).
+  paymob: {
+    apiKey: process.env.PAYMOB_API_KEY,
+    integrationId: process.env.PAYMOB_INTEGRATION_ID,
+    iframeId: process.env.PAYMOB_IFRAME_ID,
+    hmacSecret: process.env.PAYMOB_HMAC_SECRET,
+    // Where the mock iframe URL points. Defaults to the dev web app.
+    mockBaseUrl: process.env.PAYMOB_MOCK_BASE_URL ?? 'http://localhost:3000',
+  },
   throttle: {
     ttl: 60_000, // 1 minute
     limit: 100, // 100 requests per minute

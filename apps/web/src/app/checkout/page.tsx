@@ -29,7 +29,7 @@ import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useSettings } from '@/hooks/use-menu';
 import { useMyAddresses } from '@/hooks/use-addresses';
-import { usePlaceOrder } from '@/hooks/use-orders';
+import { useCreateCheckoutSession, usePlaceOrder } from '@/hooks/use-orders';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type {
@@ -82,14 +82,13 @@ const PAYMENT_OPTIONS: {
   {
     value: 'CARD',
     label: 'Card (Paymob)',
-    description: 'Coming in Sprint 7 — full Paymob sandbox.',
+    description: 'Visa / Mastercard via Paymob. Sandbox / mock — no real charges.',
     icon: CreditCard,
-    disabled: true,
   },
   {
     value: 'WALLET',
     label: 'Wallet',
-    description: 'Mobile wallet — also Sprint 7.',
+    description: 'Mobile wallet — coming in a future sprint.',
     icon: Wallet,
     disabled: true,
   },
@@ -159,6 +158,7 @@ export default function CheckoutPage() {
   );
 
   const placeOrder = usePlaceOrder();
+  const checkoutSession = useCreateCheckoutSession();
   const addresses = useMyAddresses();
 
   // Derive the effective address id: explicit selection wins, otherwise fall
@@ -227,6 +227,18 @@ export default function CheckoutPage() {
     try {
       const order = await placeOrder.mutateAsync(payload);
       clearCart();
+      if (paymentMethod === 'CARD') {
+        // Hand off to the payment provider — `/order/success?id=…` is
+        // the customer's return URL after the gateway redirects them
+        // back, and a Paymob webhook will flip the payment to PAID on
+        // the server-side before they arrive (the success page polls
+        // until that's true).
+        const session = await checkoutSession.mutateAsync(order.id);
+        // Use a hard nav (window.location) for cross-origin gateway URLs;
+        // router.push would treat them as relative.
+        window.location.href = session.iframeUrl;
+        return;
+      }
       router.replace(`/order/success?id=${order.id}`);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Could not place order';
@@ -510,13 +522,16 @@ export default function CheckoutPage() {
                   type="button"
                   size="lg"
                   onClick={placeOrderHandler}
-                  disabled={placeOrder.isPending || subtotal < minOrder}
+                  disabled={
+                    placeOrder.isPending || checkoutSession.isPending || subtotal < minOrder
+                  }
                 >
-                  {placeOrder.isPending ? (
+                  {placeOrder.isPending || checkoutSession.isPending ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      <ShoppingBag className="size-4" /> Place order
+                      <ShoppingBag className="size-4" />
+                      {paymentMethod === 'CARD' ? 'Place order & pay' : 'Place order'}
                     </>
                   )}
                 </Button>

@@ -16,6 +16,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -58,6 +59,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     AddressesModule,
     CouponsModule,
     CustomersModule,
+    PaymentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

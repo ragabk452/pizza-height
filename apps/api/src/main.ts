@@ -10,7 +10,14 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { DecimalToNumberInterceptor } from './common/interceptors/decimal-to-number.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // `rawBody: true` makes the raw body buffer available on `req.rawBody`,
+  // which the Paymob webhook handler needs in order to verify the HMAC
+  // signature over the exact bytes Paymob sent (any re-serialization
+  // would shift whitespace and break the signature).
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   const logger = app.get(Logger);
   app.useLogger(logger);
@@ -65,6 +72,7 @@ async function bootstrap() {
     .addTag('Addresses')
     .addTag('Coupons')
     .addTag('Customers')
+    .addTag('Payments')
     .addTag('Settings')
     .addTag('Upload')
     .addTag('Health')

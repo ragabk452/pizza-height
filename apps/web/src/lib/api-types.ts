@@ -241,3 +241,11 @@ export interface CreateOrderPayload {
   customerNotes?: string;
   tipAmount?: number;
 }
+
+// Payments ===========================================================
+
+export interface CheckoutSession {
+  iframeUrl: string;
+  sessionRef: string;
+  provider: 'paymob' | 'mock';
+}
