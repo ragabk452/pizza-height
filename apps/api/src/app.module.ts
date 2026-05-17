@@ -15,6 +15,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -56,6 +57,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     OrdersModule,
     AddressesModule,
     CouponsModule,
+    CustomersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

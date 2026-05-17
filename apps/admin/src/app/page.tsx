@@ -1,65 +1,68 @@
-import Image from 'next/image';
+'use client';
 
-export default function Home() {
+import { Bike, ChefHat, DollarSign, ShoppingBag } from 'lucide-react';
+import { ProtectedShell } from '@/components/layout/protected-shell';
+import { Topbar } from '@/components/layout/topbar';
+import { KPICard } from '@/components/dashboard/kpi-card';
+import { StatusBreakdown } from '@/components/dashboard/status-breakdown';
+import { RecentOrdersTable } from '@/components/dashboard/recent-orders-table';
+import { useDashboardStats } from '@/hooks/use-admin-data';
+import { useStaffRealtime } from '@/hooks/use-staff-realtime';
+
+export default function DashboardPage() {
+  const { data, isLoading } = useDashboardStats();
+  useStaffRealtime({ notifyOnNewOrder: true });
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{' '}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{' '}
-            or the{' '}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{' '}
-            center.
-          </p>
+    <ProtectedShell>
+      <Topbar
+        title="Dashboard"
+        subtitle={`Today · ${new Date().toLocaleDateString(undefined, {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+        })}`}
+      />
+
+      <main className="flex-1 px-6 py-8 sm:px-8">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <KPICard
+            label="Orders today"
+            value={data?.today.orderCount ?? 0}
+            icon={ShoppingBag}
+            accent="gold"
+            loading={isLoading}
+          />
+          <KPICard
+            label="Revenue today"
+            value={data?.today.revenue ?? 0}
+            prefix="$"
+            decimals={2}
+            icon={DollarSign}
+            accent="success"
+            loading={isLoading}
+          />
+          <KPICard
+            label="In progress"
+            value={data?.today.inProgress ?? 0}
+            icon={ChefHat}
+            accent="info"
+            loading={isLoading}
+          />
+          <KPICard
+            label="On the way"
+            value={data?.statusCounts.OUT_FOR_DELIVERY ?? 0}
+            icon={Bike}
+            accent="sienna"
+            loading={isLoading}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-8 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+          <RecentOrdersTable rows={data?.recentOrders} loading={isLoading} />
+          <StatusBreakdown counts={data?.statusCounts} loading={isLoading} />
         </div>
       </main>
-    </div>
+    </ProtectedShell>
   );
 }

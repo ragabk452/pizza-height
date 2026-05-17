@@ -76,6 +76,16 @@ export class OrdersController {
     });
   }
 
+  @Get('stats/today')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.KITCHEN)
+  @ApiOperation({
+    summary: "Today's KPIs + status counts + recent orders (admin dashboard)",
+  })
+  stats() {
+    return this.service.stats();
+  }
+
   @Patch(':id/status')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.KITCHEN, UserRole.DRIVER)

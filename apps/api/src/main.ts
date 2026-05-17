@@ -64,6 +64,7 @@ async function bootstrap() {
     .addTag('Orders')
     .addTag('Addresses')
     .addTag('Coupons')
+    .addTag('Customers')
     .addTag('Settings')
     .addTag('Upload')
     .addTag('Health')

@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,7 +10,9 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import type { UserRole } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 export const RealtimeEvents = {
   OrderCreated: 'order.created',
@@ -31,6 +34,13 @@ const SOCKET_CORS_ORIGINS = (
   .map((o) => o.trim())
   .filter(Boolean);
 
+// Which staff roles are allowed to join each protected room.
+const STAFF_ROOM_ROLES: Record<string, UserRole[]> = {
+  admin: ['ADMIN', 'MANAGER'],
+  kitchen: ['ADMIN', 'MANAGER', 'KITCHEN'],
+};
+const STAFF_ROOMS = new Set(Object.keys(STAFF_ROOM_ROLES));
+
 @WebSocketGateway({
   cors: { origin: SOCKET_CORS_ORIGINS, credentials: true },
   namespace: '/realtime',
@@ -42,6 +52,8 @@ export class RealtimeGateway
 
   @WebSocketServer()
   server!: Server;
+
+  constructor(private readonly jwt: JwtService) {}
 
   afterInit() {
     this.logger.log('🛰️  Realtime gateway initialized at /realtime');
@@ -59,10 +71,8 @@ export class RealtimeGateway
   // status updates without authenticating the socket itself. Authorization
   // is enforced on the REST side — the worst a guesser could do is observe
   // a status string. Staff rooms ("admin", "kitchen") expose customer
-  // notes/order content, so they're protected: only the API itself broadcasts
-  // to them, and we refuse browser-side `join` for those rooms.
-  // (Real staff socket auth lands in Sprint 5 with the admin app.)
-  private static readonly STAFF_ROOMS = new Set(['admin', 'kitchen']);
+  // notes/order content, so they require a verified staff JWT via the
+  // `staff:join` event below.
   private static readonly MAX_ROOMS_PER_SOCKET = 20;
 
   @SubscribeMessage('join')
@@ -73,8 +83,8 @@ export class RealtimeGateway
     if (typeof room !== 'string' || room.length === 0 || room.length > 80) {
       return { error: 'Invalid room' };
     }
-    if (RealtimeGateway.STAFF_ROOMS.has(room)) {
-      return { error: 'Staff rooms are not joinable from the client' };
+    if (STAFF_ROOMS.has(room)) {
+      return { error: 'Use staff:join with a valid token to join staff rooms' };
     }
     // `client.rooms` always contains the socket's own id, so the cap is +1.
     if (client.rooms.size > RealtimeGateway.MAX_ROOMS_PER_SOCKET) {
@@ -91,6 +101,43 @@ export class RealtimeGateway
   ): { left: string } {
     void client.leave(room);
     return { left: room };
+  }
+
+  /**
+   * Authenticated staff-room subscription. Payload: { token, room }.
+   * Verifies the JWT, checks `type === 'staff'`, and confirms the user's
+   * role is allowed for the requested room before joining.
+   */
+  @SubscribeMessage('staff:join')
+  async handleStaffJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { token?: string; room?: string },
+  ): Promise<{ joined: string } | { error: string }> {
+    if (
+      !payload ||
+      typeof payload.token !== 'string' ||
+      typeof payload.room !== 'string'
+    ) {
+      return { error: 'Invalid payload (expected { token, room })' };
+    }
+    if (!STAFF_ROOMS.has(payload.room)) {
+      return { error: `Unknown staff room "${payload.room}"` };
+    }
+    let decoded: JwtPayload;
+    try {
+      decoded = await this.jwt.verifyAsync<JwtPayload>(payload.token);
+    } catch {
+      return { error: 'Invalid or expired token' };
+    }
+    if (decoded.type !== 'staff' || !decoded.role) {
+      return { error: 'Staff authentication required' };
+    }
+    const allowedRoles = STAFF_ROOM_ROLES[payload.room];
+    if (!allowedRoles.includes(decoded.role as UserRole)) {
+      return { error: `Your role cannot join "${payload.room}"` };
+    }
+    void client.join(payload.room);
+    return { joined: payload.room };
   }
 
   /** Broadcast to a specific room (e.g. "kitchen", "admin"). */

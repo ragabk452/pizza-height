@@ -468,6 +468,83 @@ export class OrdersService {
     });
   }
 
+  /**
+   * Aggregate stats for the admin dashboard: today's totals + active-order
+   * counts grouped by status. Cheap enough at portfolio scale that we recompute
+   * on demand instead of caching.
+   */
+  async stats() {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [todayAgg, statusGroups, recent] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          createdAt: { gte: startOfDay },
+          status: { not: OrderStatus.CANCELLED },
+        },
+        _count: { _all: true },
+        _sum: { total: true },
+      }),
+      this.prisma.order.groupBy({
+        by: ['status'],
+        where: { createdAt: { gte: startOfDay } },
+        _count: { _all: true },
+      }),
+      this.prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+        select: {
+          id: true,
+          orderNumber: true,
+          type: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+          _count: { select: { items: true } },
+        },
+      }),
+    ]);
+
+    const statusCounts: Record<string, number> = {
+      PENDING: 0,
+      CONFIRMED: 0,
+      PREPARING: 0,
+      READY: 0,
+      OUT_FOR_DELIVERY: 0,
+      DELIVERED: 0,
+      CANCELLED: 0,
+    };
+    for (const g of statusGroups) statusCounts[g.status] = g._count._all;
+
+    const inProgress =
+      statusCounts.PENDING +
+      statusCounts.CONFIRMED +
+      statusCounts.PREPARING +
+      statusCounts.READY +
+      statusCounts.OUT_FOR_DELIVERY;
+
+    return {
+      today: {
+        orderCount: todayAgg._count._all,
+        revenue: Number(todayAgg._sum.total ?? 0),
+        inProgress,
+      },
+      statusCounts,
+      recentOrders: recent.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        type: o.type,
+        status: o.status,
+        total: Number(o.total),
+        createdAt: o.createdAt,
+        customerName: o.customer.name,
+        itemCount: o._count.items,
+      })),
+    };
+  }
+
   // ============================================================
   // STATUS TRANSITIONS
   // ============================================================
