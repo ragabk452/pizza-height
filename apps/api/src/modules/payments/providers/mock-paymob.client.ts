@@ -29,11 +29,10 @@ export class MockPaymobClient implements PaymentProvider {
     );
   }
 
-  async createSession(
-    params: CreateSessionParams,
-  ): Promise<CreateSessionResult> {
-    // Treat the merchant ref as both the session ref and the provider order
-    // id — there's only one identifier in the mock world.
+  // Synchronous body wrapped in Promise.resolve so the interface stays
+  // `Promise<...>` without forcing an `async` keyword the linter then
+  // flags for having nothing to await.
+  createSession(params: CreateSessionParams): Promise<CreateSessionResult> {
     const sessionRef = `mock_${params.merchantOrderRef}_${Date.now().toString(36)}`;
     const q = new URLSearchParams({
       session: sessionRef,
@@ -42,12 +41,12 @@ export class MockPaymobClient implements PaymentProvider {
       order: params.merchantOrderRef,
       id: params.merchantOrderId,
     });
-    return {
+    return Promise.resolve({
       iframeUrl: `${this.mockPageBaseUrl}/payment/mock?${q.toString()}`,
       sessionRef,
       providerOrderId: sessionRef,
       raw: { mode: 'mock', requestedAt: new Date().toISOString() },
-    };
+    });
   }
 
   /**
