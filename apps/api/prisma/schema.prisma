@@ -1,0 +1,449 @@
+// Pizza Height - Database Schema
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  KITCHEN
+  DRIVER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  DINE_IN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WALLET
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+  FREE_DELIVERY
+}
+
+// ============================================================
+// Authentication & People
+// ============================================================
+
+// Staff users (admin, manager, kitchen, driver)
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(MANAGER)
+  isActive     Boolean  @default(true)
+  refreshToken String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// Customers (end-users who place orders)
+model Customer {
+  id            String  @id @default(cuid())
+  email         String? @unique
+  phone         String  @unique
+  passwordHash  String?
+  name          String
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+  refreshToken  String?
+
+  addresses Address[]
+  orders    Order[]
+  reviews   Review[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([phone])
+  @@map("customers")
+}
+
+model Address {
+  id           String  @id @default(cuid())
+  customerId   String
+  label        String  @default("Home") // Home, Work, etc
+  street       String
+  building     String?
+  apartment    String?
+  floor        String?
+  area         String
+  city         String
+  governorate  String?
+  landmark     String?
+  latitude     Float?
+  longitude    Float?
+  instructions String? // delivery instructions
+  isDefault    Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+// ============================================================
+// Menu
+// ============================================================
+
+model Category {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+  imageUrl    String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  menuItems MenuItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([slug])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  categoryId  String
+  slug        String   @unique
+  name        String
+  description String
+  imageUrl    String?
+  basePrice   Decimal  @db.Decimal(10, 2) // price for the smallest/default variant
+  isAvailable Boolean  @default(true)
+  isPopular   Boolean  @default(false)
+  isSpicy     Boolean  @default(false)
+  isVegetarian Boolean @default(false)
+  isVegan     Boolean  @default(false)
+  isGlutenFree Boolean @default(false)
+  isNew       Boolean  @default(false)
+  prepTimeMin Int      @default(15) // estimated prep minutes
+  sortOrder   Int      @default(0)
+
+  category       Category        @relation(fields: [categoryId], references: [id])
+  sizes          ItemSize[]
+  modifierGroups ModifierGroup[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isAvailable])
+  @@map("menu_items")
+}
+
+model ItemSize {
+  id            String  @id @default(cuid())
+  menuItemId    String
+  name          String // Small, Medium, Large, XLarge
+  diameterCm    Int? // for pizzas
+  priceModifier Decimal @db.Decimal(10, 2) @default(0) // added to base price
+  isDefault     Boolean @default(false)
+  sortOrder     Int     @default(0)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([menuItemId])
+  @@map("item_sizes")
+}
+
+// A group of modifiers (e.g. "Extra Toppings", "Crust Style")
+model ModifierGroup {
+  id           String  @id @default(cuid())
+  menuItemId   String
+  name         String
+  isRequired   Boolean @default(false)
+  minSelection Int     @default(0)
+  maxSelection Int     @default(1) // 1 = single-select, >1 = multi-select
+  sortOrder    Int     @default(0)
+
+  menuItem  MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  modifiers Modifier[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([menuItemId])
+  @@map("modifier_groups")
+}
+
+model Modifier {
+  id              String  @id @default(cuid())
+  modifierGroupId String
+  name            String
+  priceModifier   Decimal @db.Decimal(10, 2) @default(0)
+  isAvailable     Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  modifierGroup       ModifierGroup        @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  orderItemModifiers  OrderItemModifier[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([modifierGroupId])
+  @@map("modifiers")
+}
+
+// ============================================================
+// Orders
+// ============================================================
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique // human-readable, e.g. PH-2026-0001
+  customerId  String
+  addressId   String?
+  type        OrderType   @default(DELIVERY)
+  status      OrderStatus @default(PENDING)
+
+  // Pricing breakdown (snapshot at order time)
+  subtotal       Decimal @db.Decimal(10, 2)
+  vatAmount      Decimal @db.Decimal(10, 2) @default(0)
+  deliveryFee    Decimal @db.Decimal(10, 2) @default(0)
+  serviceCharge  Decimal @db.Decimal(10, 2) @default(0)
+  discountAmount Decimal @db.Decimal(10, 2) @default(0)
+  tipAmount      Decimal @db.Decimal(10, 2) @default(0)
+  total          Decimal @db.Decimal(10, 2)
+
+  customerNotes String?
+  cancelReason  String?
+  estimatedReadyAt DateTime?
+  scheduledFor  DateTime?
+
+  customer       Customer            @relation(fields: [customerId], references: [id])
+  address        Address?            @relation(fields: [addressId], references: [id])
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+  payment        Payment?
+  couponUsage    CouponUsage?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String  @id @default(cuid())
+  orderId      String
+  menuItemId   String
+  itemNameSnapshot String // snapshot of name at order time
+  sizeNameSnapshot String? // e.g. "Large"
+  unitPrice    Decimal @db.Decimal(10, 2)
+  quantity     Int     @default(1)
+  lineTotal    Decimal @db.Decimal(10, 2)
+  notes        String?
+
+  order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem  MenuItem            @relation(fields: [menuItemId], references: [id])
+  modifiers OrderItemModifier[]
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id            String  @id @default(cuid())
+  orderItemId   String
+  modifierId    String
+  nameSnapshot  String
+  priceSnapshot Decimal @db.Decimal(10, 2)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifier  Modifier  @relation(fields: [modifierId], references: [id])
+
+  @@index([orderItemId])
+  @@map("order_item_modifiers")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String? // staff user id
+  reason      String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// ============================================================
+// Payments
+// ============================================================
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  providerName    String? // "paymob", "stripe", "cash"
+  providerId      String? // gateway transaction id
+  providerPayload Json? // raw response from gateway
+  idempotencyKey  String? @unique
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ============================================================
+// Coupons
+// ============================================================
+
+model Coupon {
+  id            String     @id @default(cuid())
+  code          String     @unique
+  description   String?
+  type          CouponType
+  value         Decimal    @db.Decimal(10, 2) // percentage or fixed amount
+  minOrderTotal Decimal?   @db.Decimal(10, 2)
+  maxDiscount   Decimal?   @db.Decimal(10, 2)
+  maxUses       Int? // global limit
+  maxUsesPerCustomer Int?
+  firstOrderOnly Boolean   @default(false)
+  validFrom     DateTime?
+  validUntil    DateTime?
+  isActive      Boolean    @default(true)
+
+  usages CouponUsage[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id             String  @id @default(cuid())
+  couponId       String
+  orderId        String  @unique
+  discountApplied Decimal @db.Decimal(10, 2)
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([couponId])
+  @@map("coupon_usage")
+}
+
+// ============================================================
+// Reviews
+// ============================================================
+
+model Review {
+  id         String  @id @default(cuid())
+  customerId String
+  menuItemId String
+  rating     Int     // 1-5
+  comment    String?
+  isApproved Boolean @default(true)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([customerId, menuItemId])
+  @@index([menuItemId])
+  @@map("reviews")
+}
+
+// ============================================================
+// Settings (key-value store for restaurant config)
+// ============================================================
+
+model Setting {
+  key         String  @id
+  value       Json
+  description String?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

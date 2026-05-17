@@ -28,8 +28,14 @@
       "Bash(grep -rn \"--gap\" --include=\"*.tsx\" --include=\"*.css\")",
       "Bash(grep -rn \"\\\\-\\\\-gap\" .)",
       "Bash(grep -A 5 \"@keyframes marquee\" app/globals.css)",
-      "Bash(grep -B 1 -A 3 \"animation: marquee\" components/sections/featured-items.tsx)"
+      "Bash(grep -B 1 -A 3 \"animation: marquee\" components/sections/featured-items.tsx)",
+      "Bash(cat /tmp/api-test.log | head -30)",
+      "Read(//private/tmp/**)",
+      "Bash(cd \"/Users/ragab1512/Documents/KAREEM/مبرمج/Requests/\" && \\\\ *)"
     ],
-    "additionalDirectories": ["/Users/ragab1512/Documents/KAREEM/مبرمج/Requests"]
+    "additionalDirectories": [
+      "/Users/ragab1512/Documents/KAREEM/مبرمج/Requests",
+      "/Users/ragab1512/Documents/KAREEM/مبرمج/Requests/apps/*"
+    ]
   }
 }
