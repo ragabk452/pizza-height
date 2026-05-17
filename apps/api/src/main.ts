@@ -1,6 +1,7 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
@@ -14,10 +15,18 @@ async function bootstrap() {
   // which the Paymob webhook handler needs in order to verify the HMAC
   // signature over the exact bytes Paymob sent (any re-serialization
   // would shift whitespace and break the signature).
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
   });
+
+  // Trust the first proxy hop (Railway / Vercel / any PaaS edge). Without
+  // this, `req.ip` is the proxy IP for every request, which silently
+  // breaks the per-IP Throttler (the 5/min auth limit flapped between 3
+  // and 4 remaining in prod because the proxy rotates source IPs).
+  // `1` = trust 1 hop; X-Forwarded-For is honored, X-Forwarded-Proto is
+  // honored, but a spoofed XFF from the client itself is still ignored.
+  app.set('trust proxy', 1);
 
   const logger = app.get(Logger);
   app.useLogger(logger);
