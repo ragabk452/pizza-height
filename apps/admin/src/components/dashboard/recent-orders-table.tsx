@@ -17,6 +17,11 @@ const TYPE_LABEL: Record<string, string> = {
   DINE_IN: 'Dine in',
 };
 
+// Same set as /orders — active = not in a terminal state. Keeping this in
+// sync with the orders table means a pulsing pill on the dashboard always
+// means the same thing.
+const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY']);
+
 export function RecentOrdersTable({ rows, loading }: Props) {
   return (
     <div className="bg-surface/40 border-border rounded-2xl border">
@@ -56,7 +61,7 @@ export function RecentOrdersTable({ rows, loading }: Props) {
                     <span className="text-foreground font-display tracking-wide">
                       {row.orderNumber}
                     </span>
-                    <StatusBadge status={row.status} />
+                    <StatusBadge status={row.status} pulse={ACTIVE_STATUSES.has(row.status)} />
                   </div>
                   <p className="text-muted mt-0.5 text-xs">
                     {row.customerName} · {TYPE_LABEL[row.type] ?? row.type} · {row.itemCount}{' '}

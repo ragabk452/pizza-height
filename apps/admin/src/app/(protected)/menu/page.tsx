@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { Construction, Flame, Leaf, Loader2, Star } from 'lucide-react';
-import { ProtectedShell } from '@/components/layout/protected-shell';
 import { Topbar } from '@/components/layout/topbar';
 import { useAdminCategories, useAdminMenuItems } from '@/hooks/use-admin-data';
 import type { MenuItem } from '@/lib/api-types';
@@ -13,7 +12,7 @@ export default function AdminMenuPage() {
   const { data: items, isLoading } = useAdminMenuItems();
 
   return (
-    <ProtectedShell>
+    <>
       <Topbar
         title="Menu"
         subtitle="Categories, items, sizes, and modifiers."
@@ -62,7 +61,7 @@ export default function AdminMenuPage() {
           </div>
         )}
       </main>
-    </ProtectedShell>
+    </>
   );
 }
 

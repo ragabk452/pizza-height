@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { ProtectedShell } from '@/components/layout/protected-shell';
 import { Topbar } from '@/components/layout/topbar';
 import { OrdersTable } from '@/components/orders/orders-table';
 import { OrderDetailDrawer } from '@/components/orders/order-detail-drawer';
@@ -41,8 +40,9 @@ export default function OrdersPage() {
 function OrdersInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const initialSelected = params.get('id');
-  const [selectedId, setSelectedId] = useState<string | null>(initialSelected);
+  // Derive directly from the URL — keeping a separate state means browser
+  // back/forward leaves the drawer showing a stale order.
+  const selectedId = params.get('id');
   const [filter, setFilter] = useState<'ALL' | OrderStatus>('ALL');
 
   useStaffRealtime();
@@ -61,7 +61,6 @@ function OrdersInner() {
 
   const handleSelect = useCallback(
     (id: string) => {
-      setSelectedId(id);
       const next = new URLSearchParams(params.toString());
       next.set('id', id);
       router.replace(`/orders?${next.toString()}`, { scroll: false });
@@ -70,7 +69,6 @@ function OrdersInner() {
   );
 
   const handleClose = useCallback(() => {
-    setSelectedId(null);
     const next = new URLSearchParams(params.toString());
     next.delete('id');
     const qs = next.toString();
@@ -78,7 +76,7 @@ function OrdersInner() {
   }, [params, router]);
 
   return (
-    <ProtectedShell>
+    <>
       <Topbar
         title="Orders"
         subtitle="Live workflow — click a row to see the receipt and move it along."
@@ -136,6 +134,6 @@ function OrdersInner() {
       </main>
 
       <OrderDetailDrawer orderId={selectedId} onClose={handleClose} />
-    </ProtectedShell>
+    </>
   );
 }

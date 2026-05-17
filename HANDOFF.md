@@ -130,7 +130,7 @@ packages/
 - ValidationPipe (whitelist + forbidNonWhitelisted + transform)
 - ClassSerializerInterceptor + **DecimalToNumberInterceptor** (يحول كل Decimal لـ number recursively)
 - AllExceptionsFilter موحد
-- Swagger UI على `/api/docs` (31 endpoints across 9 tags as of Sprint 4)
+- Swagger UI على `/api/docs` (34 endpoints across 10 tags as of Sprint 5)
 - nestjs-pino logger (pino-pretty في dev)
 - Throttler (100 req/min default)
 - JwtAuthGuard كـ APP_GUARD (مع `@Public()` decorator)
@@ -291,7 +291,7 @@ https://images.unsplash.com/photo-<ID>?w=800&q=80&auto=format
 
 ---
 
-## 9. Git history الحالي (12 commits — run `git log --oneline` for the live list)
+## 9. Git history الحالي (run `git log --oneline` for the live list)
 
 ```
 902df56 feat: Sprint 4 - Checkout & Orders (Auth + Live Tracking)
@@ -360,7 +360,7 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 /Users/ragab1512/Documents/KAREEM/مبرمج/Requests/
 ├── HANDOFF.md                                    ← أنت هنا
 ├── restaurant-ordering-project-plan.md           ← الخطة الكاملة (9 sprints)
-├── apps/api/prisma/schema.prisma                 ← Database schema (18 models)
+├── apps/api/prisma/schema.prisma                 ← Database schema (17 models)
 ├── apps/api/prisma/seed.ts                       ← Seed data + image URLs
 ├── apps/api/src/main.ts                          ← Global setup (helmet, throttler, swagger, etc.)
 ├── apps/api/src/app.module.ts                    ← Module wiring

@@ -1,7 +1,6 @@
 'use client';
 
 import { Construction, Loader2 } from 'lucide-react';
-import { ProtectedShell } from '@/components/layout/protected-shell';
 import { Topbar } from '@/components/layout/topbar';
 import { useAdminSettings } from '@/hooks/use-admin-data';
 
@@ -40,7 +39,7 @@ const ROWS: SettingRow[] = [
 export default function SettingsPage() {
   const { data, isLoading } = useAdminSettings();
   return (
-    <ProtectedShell>
+    <>
       <Topbar
         title="Settings"
         subtitle="Restaurant configuration."
@@ -84,7 +83,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {data?.['restaurant.workingHours'] !== undefined && (
+        {/* `!= null` catches both undefined and explicit null so we don't
+            render `<pre>null</pre>` when the setting hasn't been saved. */}
+        {data?.['restaurant.workingHours'] != null && (
           <div className="bg-surface/40 border-border mt-6 max-w-2xl rounded-2xl border p-6">
             <p className="text-muted text-[10px] tracking-[0.18em] uppercase">Working hours</p>
             <pre className="text-muted mt-2 overflow-x-auto font-mono text-xs">
@@ -93,6 +94,6 @@ export default function SettingsPage() {
           </div>
         )}
       </main>
-    </ProtectedShell>
+    </>
   );
 }

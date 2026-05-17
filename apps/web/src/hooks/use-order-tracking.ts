@@ -20,8 +20,11 @@ function socketUrl(): string {
 }
 
 // Module-level singleton: react-query subscribers across pages share one
-// connection. We null it back out on `disconnect` so a server restart or
-// network drop forces a fresh handshake on the next mount.
+// connection. socket.io-client's built-in reconnection (enabled by default)
+// handles dropped connections — we DON'T null the singleton on disconnect,
+// because that would let a new `getSocket()` mint a second socket while the
+// original one is still trying to reconnect in the background, ending up
+// with duplicate handlers firing for every event.
 let sharedSocket: Socket | null = null;
 
 function getSocket(): Socket {
@@ -29,9 +32,6 @@ function getSocket(): Socket {
   sharedSocket = io(`${socketUrl()}/realtime`, {
     transports: ['websocket', 'polling'],
     autoConnect: true,
-  });
-  sharedSocket.on('disconnect', () => {
-    sharedSocket = null;
   });
   return sharedSocket;
 }

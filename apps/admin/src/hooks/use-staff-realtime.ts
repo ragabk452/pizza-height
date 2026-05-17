@@ -19,15 +19,15 @@ function socketUrl(): string {
   }
 }
 
+// socket.io-client's built-in reconnection handles dropped connections;
+// we keep the same singleton across reconnects so we don't end up with
+// two live sockets (and duplicate handlers) after a server restart.
 let sharedSocket: Socket | null = null;
 function getSocket(): Socket {
   if (sharedSocket) return sharedSocket;
   sharedSocket = io(`${socketUrl()}/realtime`, {
     transports: ['websocket', 'polling'],
     autoConnect: true,
-  });
-  sharedSocket.on('disconnect', () => {
-    sharedSocket = null;
   });
   return sharedSocket;
 }

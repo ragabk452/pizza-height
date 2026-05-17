@@ -7,11 +7,15 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { useAuthStore } from '@/store/auth-store';
 
 /**
- * Wraps every authenticated admin page. Renders a loader while the auth
- * store rehydrates from localStorage; redirects to /login (preserving the
- * intended destination) once we know the user isn't signed in.
+ * Layout for every page that requires staff auth. By living in a route-group
+ * layout (instead of being wrapped per page), the Sidebar mounts ONCE for the
+ * whole authenticated section — so the Framer Motion `layoutId` pill actually
+ * animates between routes, and we don't pay for a fresh shell on every nav.
+ *
+ * Gates the render on auth-store rehydration so a hard refresh doesn't flash
+ * the dashboard before redirecting to /login.
  */
-export function ProtectedShell({ children }: { children: ReactNode }) {
+export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const hydrated = useAuthStore((s) => s.hydrated);

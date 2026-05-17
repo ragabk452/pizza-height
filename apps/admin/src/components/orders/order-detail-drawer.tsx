@@ -267,6 +267,10 @@ function StatusActions({ order, onClose }: { order: Order; onClose: () => void }
               variant="ghost"
               className="flex-1"
               type="button"
+              // Don't let the user back out of the form mid-request — the
+              // mutation is still in flight and would close the drawer on
+              // success with a toast for an order they're no longer viewing.
+              disabled={transition.isPending}
               onClick={() => setShowCancel(false)}
             >
               Back
@@ -292,6 +296,10 @@ function StatusActions({ order, onClose }: { order: Order; onClose: () => void }
             <Button
               type="button"
               variant="ghost"
+              // Pending while the primary transition is firing — otherwise
+              // the user could open the cancel form mid-confirm and confuse
+              // the workflow.
+              disabled={transition.isPending}
               onClick={() => setShowCancel(true)}
               className="text-accent hover:text-accent"
             >

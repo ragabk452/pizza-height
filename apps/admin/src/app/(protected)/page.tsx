@@ -1,7 +1,6 @@
 'use client';
 
 import { Bike, ChefHat, DollarSign, ShoppingBag } from 'lucide-react';
-import { ProtectedShell } from '@/components/layout/protected-shell';
 import { Topbar } from '@/components/layout/topbar';
 import { KPICard } from '@/components/dashboard/kpi-card';
 import { StatusBreakdown } from '@/components/dashboard/status-breakdown';
@@ -14,7 +13,7 @@ export default function DashboardPage() {
   useStaffRealtime({ notifyOnNewOrder: true });
 
   return (
-    <ProtectedShell>
+    <>
       <Topbar
         title="Dashboard"
         subtitle={`Today · ${new Date().toLocaleDateString(undefined, {
@@ -63,6 +62,6 @@ export default function DashboardPage() {
           <StatusBreakdown counts={data?.statusCounts} loading={isLoading} />
         </div>
       </main>
-    </ProtectedShell>
+    </>
   );
 }

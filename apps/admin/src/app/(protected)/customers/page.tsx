@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { Loader2, Mail, Phone, Search, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { ProtectedShell } from '@/components/layout/protected-shell';
 import { Topbar } from '@/components/layout/topbar';
 import { TextInput } from '@/components/ui/field';
 import { useCustomersList } from '@/hooks/use-admin-data';
@@ -19,7 +18,7 @@ export default function CustomersPage() {
   const { data: customers, isLoading } = useCustomersList(search || undefined);
 
   return (
-    <ProtectedShell>
+    <>
       <Topbar
         title="Customers"
         subtitle={
@@ -56,7 +55,10 @@ export default function CustomersPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.3 }}
-                className="bg-surface/40 border-border hover:border-primary/40 group flex items-center gap-4 rounded-2xl border p-4 transition-all hover:-translate-y-0.5"
+                // No hover-lift here — the row isn't clickable yet (detail
+                // drawer ships in Sprint 5.1). The hover affordance was
+                // misleading users into clicking and getting nothing.
+                className="bg-surface/40 border-border flex items-center gap-4 rounded-2xl border p-4"
               >
                 <span className="bg-primary/15 border-primary/40 text-primary inline-flex size-11 shrink-0 items-center justify-center rounded-xl border">
                   <User className="size-4" />
@@ -87,6 +89,6 @@ export default function CustomersPage() {
           </ul>
         )}
       </main>
-    </ProtectedShell>
+    </>
   );
 }
