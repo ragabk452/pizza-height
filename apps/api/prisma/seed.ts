@@ -18,134 +18,65 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 /**
- * AI-generated food images via Pollinations.ai — free, no API key, and every URL
- * is guaranteed to match the item description (because the URL *is* the prompt).
- * Each prompt is tuned for moody, restaurant-grade food photography.
+ * Unsplash CDN URLs — fast, reliable, no rate limits. Each ID is a stable
+ * Unsplash photo. Picks are best-effort food matches; if the user spots a
+ * mismatch we swap the single ID rather than the whole approach.
+ *
+ * Tried Pollinations.ai but its free tier rate-limits to 1 concurrent request
+ * per IP (HTTP 402), which broke the menu page where 26+ images load at once.
  */
-function img(prompt: string, seed: number) {
-  const encoded = encodeURIComponent(
-    `${prompt}, professional food photography, dark moody luxury restaurant background, ` +
-      `top-down angle, shallow depth of field, ultra realistic, 8k`,
-  );
-  return `https://image.pollinations.ai/prompt/${encoded}?width=800&height=800&seed=${seed}&nologo=true&model=flux`;
-}
+const unsplash = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format`;
 
 const IMG = {
   // Pizzas
-  margherita: img(
-    'Authentic Margherita pizza, fresh basil leaves, melted buffalo mozzarella, San Marzano tomato sauce, wood-fired crust',
-    101,
-  ),
-  pepperoni: img(
-    'Pepperoni pizza with crispy edges, melted mozzarella, herb garnish',
-    102,
-  ),
-  truffle: img(
-    'White truffle pizza with shaved black truffle, ricotta, mozzarella, wild mushrooms',
-    103,
-  ),
-  quattroFormaggi: img(
-    'Four-cheese pizza, gorgonzola parmigiano taleggio mozzarella, caramelized walnuts',
-    104,
-  ),
-  diavola: img(
-    'Spicy diavola pizza, red salami, calabrian chili peppers, mozzarella, oregano',
-    105,
-  ),
-  burrata: img(
-    'Pizza topped with creamy burrata cheese, prosciutto di parma, fresh arugula',
-    106,
-  ),
-  funghi: img(
-    'Wild mushroom pizza, taleggio, fontina cheese, fresh thyme, garlic oil',
-    107,
-  ),
-  vegana: img(
-    'Vegan pizza with roasted peppers, zucchini, eggplant, vegan cheese, basil pesto',
-    108,
-  ),
-  hawaiian: img(
-    'Gourmet hawaiian pizza with smoked ham, fire-roasted pineapple, jalapeno, cilantro',
-    109,
-  ),
-  bbq: img(
-    'BBQ chicken pizza with red onion, smoked chicken, sweet corn, cilantro, smoky barbecue sauce',
-    110,
-  ),
+  margherita: unsplash('1574071318508-1cdbab80d002'),
+  pepperoni: unsplash('1628840042765-356cda07504e'),
+  truffle: unsplash('1565299624946-b28f40a0ae38'),
+  quattroFormaggi: unsplash('1571407970349-bc81e7e96d47'),
+  diavola: unsplash('1604068549290-dea0e4a305ca'),
+  burrata: unsplash('1593560708920-61dd98c46a4e'),
+  funghi: unsplash('1571997478779-2adcbbe9ab2f'),
+  vegana: unsplash('1604382355076-af4b0eb60143'),
+  hawaiian: unsplash('1565299585323-38d6b0865b47'),
+  bbq: unsplash('1593504049359-74330189a345'),
 
   // Salads
-  caesar: img(
-    'Caesar salad with crisp romaine, parmigiano shavings, anchovy, garlic croutons',
-    201,
-  ),
-  caprese: img(
-    'Caprese salad with buffalo mozzarella, heirloom tomato, fresh basil, balsamic glaze',
-    202,
-  ),
-  arugula: img(
-    'Arugula salad with poached pear, gorgonzola cheese, candied walnuts, honey vinaigrette',
-    203,
-  ),
+  caesar: unsplash('1546793665-c74683f339c1'),
+  caprese: unsplash('1608032077018-c9aad9565d29'),
+  arugula: unsplash('1505253716362-afaea1d3d1af'),
 
   // Wines
-  redWine: img(
-    'Glass of red Chianti wine, italian restaurant table setting',
-    301,
-  ),
-  whiteWine: img(
-    'Glass of white pinot grigio wine with condensation, italian dinner setting',
-    302,
-  ),
-  prosecco: img(
-    'Glass of sparkling prosecco wine with bubbles, italian celebration',
-    303,
-  ),
+  redWine: unsplash('1553361371-9b22f78e8b1d'),
+  whiteWine: unsplash('1510812431401-41d2bd2722f3'),
+  prosecco: unsplash('1547595628-c61a29f496f0'),
 
   // Antipasti
-  bruschetta: img(
-    'Italian bruschetta trio, tomato basil topping, white bean rosemary, sauteed mushroom',
-    401,
-  ),
-  arancini: img(
-    'Sicilian arancini saffron risotto balls, golden crispy, marinara dipping sauce',
-    402,
-  ),
-  prosciutto: img(
-    'Prosciutto di parma with ripe cantaloupe melon, mint leaves, balsamic pearls',
-    403,
-  ),
+  bruschetta: unsplash('1572695157366-5e585ab2b69f'),
+  arancini: unsplash('1571066811602-716837d681de'),
+  prosciutto: unsplash('1551782450-a2132b4ba21d'),
 
   // Wings & Sides
-  wings: img(
-    'Crispy buffalo chicken wings, buffalo glaze, blue cheese dip, celery sticks',
-    501,
-  ),
-  garlicBread: img(
-    'Wood-fired garlic bread with melted mozzarella cheese, roasted garlic butter, fresh parsley',
-    502,
-  ),
-  mozzarellaSticks: img(
-    'Golden crispy mozzarella sticks with marinara dipping sauce, parmesan crust',
-    503,
-  ),
+  wings: unsplash('1608039755401-742074f0548d'),
+  // Previous garlic-bread ID returned a portrait, replacement returned 404 —
+  // this one is a verified-200 bread photo on Unsplash
+  garlicBread: unsplash('1573821663912-6df460f9c684'),
+  mozzarellaSticks: unsplash('1531749668029-2db88e4276c7'),
 
   // Desserts
-  tiramisu: img(
-    'Classic italian tiramisu, mascarpone cream, cocoa powder dust, espresso-soaked ladyfingers',
-    601,
-  ),
-  cannoli: img(
-    'Sicilian cannoli pastry, sweet ricotta filling, candied orange, crushed pistachios',
-    602,
-  ),
-  espresso: img(
-    'Double espresso doppio in italian ceramic cup, perfect crema, dark moody',
-    603,
-  ),
-  affogato: img(
-    'Affogato al caffe, vanilla gelato ice cream drowned in fresh espresso, italian glass',
-    604,
-  ),
+  tiramisu: unsplash('1571877227200-a0d98ea607e9'),
+  cannoli: unsplash('1551024601-bec78aea704b'),
+  espresso: unsplash('1510707577719-ae7c14805e3a'),
+  // affogato previously reused the bbq photo ID — now distinct
+  affogato: unsplash('1517248135467-4c7edcad34c4'),
+
+  // Category covers (reuse representative item photos)
+  categoryPizzas: unsplash('1513104890138-7c749659a591'),
+  categorySalads: unsplash('1505253716362-afaea1d3d1af'),
+  categoryWines: unsplash('1553361371-9b22f78e8b1d'),
+  categoryAntipasti: unsplash('1572695157366-5e585ab2b69f'),
+  categoryWings: unsplash('1608039755401-742074f0548d'),
+  categoryDesserts: unsplash('1571877227200-a0d98ea607e9'),
 };
 
 async function main() {
@@ -245,7 +176,7 @@ async function main() {
           name: 'Signature Pizzas',
           description:
             'Hand-crafted, wood-fired in 90 seconds. Our masterpieces.',
-          imageUrl: IMG.margherita,
+          imageUrl: IMG.categoryPizzas,
           sortOrder: 1,
         },
       }),
@@ -254,7 +185,7 @@ async function main() {
           slug: 'fresh-salads',
           name: 'Fresh Salads',
           description: 'Crisp, vibrant, picked at peak.',
-          imageUrl: IMG.caesar,
+          imageUrl: IMG.categorySalads,
           sortOrder: 2,
         },
       }),
@@ -263,7 +194,7 @@ async function main() {
           slug: 'italian-wines',
           name: 'Italian Wines',
           description: 'Curated reds, whites & sparkling.',
-          imageUrl: IMG.redWine,
+          imageUrl: IMG.categoryWines,
           sortOrder: 3,
         },
       }),
@@ -272,7 +203,7 @@ async function main() {
           slug: 'antipasti',
           name: 'Antipasti',
           description: 'Italian starters to share.',
-          imageUrl: IMG.bruschetta,
+          imageUrl: IMG.categoryAntipasti,
           sortOrder: 4,
         },
       }),
@@ -281,7 +212,7 @@ async function main() {
           slug: 'wings-sides',
           name: 'Wings & Sides',
           description: 'Crispy. Bold. Addictive.',
-          imageUrl: IMG.wings,
+          imageUrl: IMG.categoryWings,
           sortOrder: 5,
         },
       }),
@@ -290,7 +221,7 @@ async function main() {
           slug: 'coffee-desserts',
           name: 'Coffee & Desserts',
           description: 'A sweet finale, espresso strong.',
-          imageUrl: IMG.tiramisu,
+          imageUrl: IMG.categoryDesserts,
           sortOrder: 6,
         },
       }),
@@ -385,7 +316,7 @@ async function main() {
     },
     {
       slug: 'vegana-orto',
-      name: 'Vegana dell&apos;Orto',
+      name: "Vegana dell'Orto",
       description:
         'Tomato, vegan mozzarella, roasted peppers, zucchini, eggplant, sun-dried tomatoes, basil pesto.',
       imageUrl: IMG.vegana,

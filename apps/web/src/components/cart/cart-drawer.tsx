@@ -13,7 +13,8 @@ export function CartDrawer() {
   const open = useUIStore((s) => s.cartOpen);
   const close = useUIStore((s) => s.closeCart);
   const items = useCartStore((s) => s.items);
-  const totals = useCartStore((s) => s.totals);
+  const vatPercent = useCartStore((s) => s.vatPercent);
+  const deliveryFee = useCartStore((s) => s.deliveryFee);
   const removeItem = useCartStore((s) => s.remove);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const clear = useCartStore((s) => s.clear);
@@ -29,7 +30,29 @@ export function CartDrawer() {
     });
   }, [settings, setConfig]);
 
-  const t = useMemo(() => totals(), [totals]);
+  // Derive totals from the actual reactive items + config — not from the
+  // store's totals() helper (whose function reference is stable and would
+  // make useMemo go stale when items mutate).
+  const t = useMemo(() => {
+    const subtotal = items.reduce(
+      (sum, i) =>
+        sum +
+        (i.basePrice + i.sizePriceModifier + i.modifiers.reduce((s, m) => s + m.priceModifier, 0)) *
+          i.quantity,
+      0,
+    );
+    const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+    const vat = +(subtotal * (vatPercent / 100)).toFixed(2);
+    const fee = items.length > 0 ? deliveryFee : 0;
+    return {
+      itemCount,
+      subtotal: +subtotal.toFixed(2),
+      vat,
+      deliveryFee: fee,
+      total: +(subtotal + vat + fee).toFixed(2),
+    };
+  }, [items, vatPercent, deliveryFee]);
+
   const minOrder = settings?.['restaurant.minOrderAmount'] ?? 15;
   const meetsMin = t.subtotal >= minOrder;
 
@@ -161,7 +184,7 @@ export function CartDrawer() {
           {items.length > 0 && (
             <div className="border-border bg-surface/40 sticky bottom-0 space-y-3 border-t px-6 py-5 backdrop-blur-md">
               <Row label="Subtotal" value={t.subtotal} />
-              <Row label={`VAT (${useCartStore.getState().vatPercent}%)`} value={t.vat} />
+              <Row label={`VAT (${vatPercent}%)`} value={t.vat} />
               <Row label="Delivery" value={t.deliveryFee} />
               <div className="border-border border-t pt-3">
                 <Row label="Total" value={t.total} bold />

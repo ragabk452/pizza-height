@@ -2,7 +2,7 @@
 
 import { Drawer } from 'vaul';
 import { Minus, Plus, X, Loader2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useMenuItem } from '@/hooks/use-menu';
 import { useUIStore } from '@/store/ui-store';

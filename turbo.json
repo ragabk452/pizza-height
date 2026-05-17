@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "*.tsbuildinfo"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
       "cache": false,
@@ -18,8 +18,7 @@
       "outputs": ["coverage/**"]
     },
     "type-check": {
-      "dependsOn": ["^build"],
-      "outputs": ["*.tsbuildinfo"]
+      "dependsOn": ["^build"]
     },
     "clean": {
       "cache": false

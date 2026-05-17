@@ -50,7 +50,17 @@
       "Bash(curl -s http://localhost:4000/api/v1/settings)",
       "Bash(curl -s -o /dev/null -w '  Status: %{http_code} \\(يجب أن يكون 401\\)\\\\n' -X POST http://localhost:4000/api/v1/auth/staff/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@pizzaheight.com\",\"password\":\"WrongPass2026!\"}')",
       "Bash(curl -s -o /tmp/swagger.html -w \"  Status: %{http_code} | Size: %{size_download} bytes\\\\n\" http://localhost:4000/api/docs)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(echo \"    $\\(docker exec pizza-height-redis redis-cli ping 2>&1\\)\")",
+      "Bash(echo \"  Health:        $\\(curl -s http://localhost:4000/api/v1/health)",
+      "Bash(cd \"/Users/ragab1512/Documents/KAREEM/مبرمج/Requests/apps/api/\" && \\\\ *)",
+      "Read(//Users/ragab1512/Documents/KAREEM/**)",
+      "Bash(pkill -f \"next start\")",
+      "Bash(mkdir -p apps/web/public/menu/items)",
+      "Bash(mkdir -p apps/web/public/menu/categories)",
+      "Bash(rm -rf apps/web/public/menu/items apps/web/public/menu/categories)",
+      "Bash(ls apps/web/public/menu/)",
+      "Bash(rm -f apps/api/prisma/download-images.ts)"
     ],
     "additionalDirectories": [
       "/Users/ragab1512/Documents/KAREEM/مبرمج/Requests",
