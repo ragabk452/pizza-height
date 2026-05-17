@@ -5,6 +5,7 @@ import { ShoppingBag, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ProfileMenu } from '@/components/layout/profile-menu';
 import { useCartStore } from '@/store/cart-store';
 import { useUIStore } from '@/store/ui-store';
 import { cn } from '@/lib/utils';
@@ -94,9 +95,7 @@ export function Navbar() {
               </motion.span>
             )}
           </Button>
-          <Button size="sm" className="hidden md:inline-flex" asChild>
-            <Link href="/menu">Order Now</Link>
-          </Button>
+          <ProfileMenu />
 
           {/* Mobile menu button */}
           <Button

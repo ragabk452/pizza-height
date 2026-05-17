@@ -3,13 +3,16 @@
 import { Drawer } from 'vaul';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { useCartStore } from '@/store/cart-store';
+import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
 import { useSettings } from '@/hooks/use-menu';
 import { cn } from '@/lib/utils';
 
 export function CartDrawer() {
+  const router = useRouter();
   const open = useUIStore((s) => s.cartOpen);
   const close = useUIStore((s) => s.closeCart);
   const items = useCartStore((s) => s.items);
@@ -19,6 +22,12 @@ export function CartDrawer() {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const clear = useCartStore((s) => s.clear);
   const setConfig = useCartStore((s) => s.setConfig);
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
+
+  function goToCheckout() {
+    close();
+    router.push(isAuthed ? '/checkout' : `/login?next=${encodeURIComponent('/checkout')}`);
+  }
 
   // Sync VAT + delivery fee from settings whenever cart opens
   const { data: settings } = useSettings();
@@ -197,7 +206,9 @@ export function CartDrawer() {
               )}
 
               <button
+                type="button"
                 disabled={!meetsMin}
+                onClick={goToCheckout}
                 className={cn(
                   'mt-2 w-full rounded-xl px-6 py-4 text-base font-medium transition-all',
                   'bg-primary text-background hover:bg-primary-hover shadow-[var(--shadow-gold)]',
@@ -206,7 +217,11 @@ export function CartDrawer() {
               >
                 Continue to checkout
               </button>
-              <p className="text-muted text-center text-xs">Checkout flow lands in Sprint 4.</p>
+              {!isAuthed && (
+                <p className="text-muted text-center text-xs">
+                  You&rsquo;ll be asked to sign in next.
+                </p>
+              )}
             </div>
           )}
         </Drawer.Content>

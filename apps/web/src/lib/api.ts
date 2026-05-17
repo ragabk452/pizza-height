@@ -1,7 +1,10 @@
 /**
  * Lightweight fetch wrapper for the Pizza Height API.
- * No external client — uses native fetch with sensible defaults.
+ * - Injects the Bearer token from the auth store automatically.
+ * - On 401 (expired token) tries the refresh-token endpoint once, then retries.
  */
+
+import { useAuthStore } from '@/store/auth-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
@@ -19,6 +22,8 @@ export class ApiError extends Error {
 type ApiInit = Omit<RequestInit, 'body'> & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
+  /** Skip the auto Bearer injection (used for login/register/refresh). */
+  skipAuth?: boolean;
 };
 
 function buildUrl(path: string, query?: ApiInit['query']) {
@@ -31,17 +36,66 @@ function buildUrl(path: string, query?: ApiInit['query']) {
   return url.toString();
 }
 
-export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
-  const { body, query, headers, ...rest } = init;
+// Promise-coalesced refresh: if multiple requests 401 at the same time, we only
+// hit /auth/refresh once.
+let refreshInflight: Promise<string | null> | null = null;
 
-  const response = await fetch(buildUrl(path, query), {
+async function tryRefresh(): Promise<string | null> {
+  if (refreshInflight) return refreshInflight;
+  const refreshToken = useAuthStore.getState().refreshToken;
+  if (!refreshToken) return null;
+
+  refreshInflight = (async () => {
+    try {
+      const res = await fetch(buildUrl('/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) {
+        useAuthStore.getState().clear();
+        return null;
+      }
+      const data = (await res.json()) as {
+        accessToken: string;
+        refreshToken: string;
+      };
+      useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
+      return data.accessToken;
+    } catch {
+      useAuthStore.getState().clear();
+      return null;
+    } finally {
+      refreshInflight = null;
+    }
+  })();
+
+  return refreshInflight;
+}
+
+async function send(path: string, init: ApiInit, token: string | null): Promise<Response> {
+  const { body, query, headers, skipAuth, ...rest } = init;
+  const merged: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(headers as Record<string, string> | undefined),
+  };
+  if (token && !skipAuth) merged['Authorization'] = `Bearer ${token}`;
+
+  return fetch(buildUrl(path, query), {
     ...rest,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
+    headers: merged,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+}
+
+export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
+  const token = init.skipAuth ? null : useAuthStore.getState().accessToken;
+  let response = await send(path, init, token);
+
+  if (response.status === 401 && !init.skipAuth) {
+    const newToken = await tryRefresh();
+    if (newToken) response = await send(path, init, newToken);
+  }
 
   if (!response.ok) {
     let payload: unknown;
@@ -60,3 +114,5 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+export const API_BASE_URL = API_URL;

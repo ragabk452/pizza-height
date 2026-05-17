@@ -12,6 +12,9 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { HealthModule } from './modules/health/health.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -50,6 +53,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     SettingsModule,
     UploadModule,
     HealthModule,
+    OrdersModule,
+    AddressesModule,
+    CouponsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { DM_Serif_Display, Manrope, Cairo } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { CartDrawer } from '@/components/cart/cart-drawer';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -77,6 +78,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             {children}
+            <CartDrawer />
             <Toaster
               theme="dark"
               position="top-center"

@@ -10,7 +10,6 @@ import { CategoryTabs } from '@/components/menu/category-tabs';
 import { SearchBar } from '@/components/menu/search-bar';
 import { ItemCard, ItemCardSkeleton } from '@/components/menu/item-card';
 import { ItemDetailsDrawer } from '@/components/menu/item-details-drawer';
-import { CartDrawer } from '@/components/cart/cart-drawer';
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -116,7 +115,6 @@ export default function MenuPage() {
 
       {/* Drawers */}
       <ItemDetailsDrawer />
-      <CartDrawer />
     </>
   );
 }
