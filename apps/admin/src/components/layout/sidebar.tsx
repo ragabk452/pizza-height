@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
+  ChefHat,
   ClipboardList,
+  ExternalLink,
   LayoutGrid,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -14,9 +16,18 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const NAV = [
+// `external: true` opens the link outside the route-group layout — KDS lives
+// at /kds (chrome-less fullscreen for kitchen tablets) so it deliberately
+// breaks out of the sidebar shell.
+const NAV: Array<{
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  external?: boolean;
+}> = [
   { href: '/', label: 'Dashboard', icon: LayoutGrid },
   { href: '/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/kds', label: 'Kitchen Display', icon: ChefHat, external: true },
   { href: '/menu', label: 'Menu', icon: Utensils },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/settings', label: 'Settings', icon: SettingsIcon },
@@ -48,6 +59,11 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              // `target="_blank"` for KDS so the kitchen display can live in
+              // its own browser window/tab without losing the admin chrome
+              // session.
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noopener' : undefined}
               className={cn(
                 'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all',
                 active
@@ -69,6 +85,7 @@ export function Sidebar() {
                 )}
               />
               <span className="relative font-medium">{item.label}</span>
+              {item.external && <ExternalLink className="text-muted/60 relative ml-auto size-3" />}
             </Link>
           );
         })}
@@ -77,7 +94,7 @@ export function Sidebar() {
       <div className="border-border border-t px-6 py-4">
         <div className="text-muted flex items-center gap-2 text-xs">
           <Sparkles className="text-primary size-3.5" />
-          <span>Sprint 5 · v0.5</span>
+          <span>Sprint 6 · v0.6</span>
         </div>
       </div>
     </aside>

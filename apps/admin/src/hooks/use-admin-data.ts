@@ -19,6 +19,7 @@ const KEYS = {
   orders: (filters?: { status?: OrderStatus; limit?: number }) =>
     ['admin', 'orders', filters ?? {}] as const,
   order: (id: string) => ['admin', 'order', id] as const,
+  kds: ['admin', 'kds'] as const,
   categories: ['admin', 'categories'] as const,
   menuItems: ['admin', 'menu-items'] as const,
   customers: (search?: string) => ['admin', 'customers', search ?? ''] as const,
@@ -77,7 +78,23 @@ export function useTransitionOrder() {
       queryClient.setQueryData(KEYS.order(order.id), order);
       void queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       void queryClient.invalidateQueries({ queryKey: KEYS.stats });
+      void queryClient.invalidateQueries({ queryKey: KEYS.kds });
     },
+  });
+}
+
+/**
+ * Kitchen Display board — active orders sorted by ETA. Polls every 30s as a
+ * safety net even though the socket should keep it in sync; if the socket
+ * drops without us noticing, the next poll catches up.
+ */
+export function useKdsBoard() {
+  const enabled = useAuthed();
+  return useQuery({
+    queryKey: KEYS.kds,
+    queryFn: () => api<Order[]>('/orders/kds/board'),
+    enabled,
+    refetchInterval: 30_000,
   });
 }
 

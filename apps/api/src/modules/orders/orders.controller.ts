@@ -86,6 +86,17 @@ export class OrdersController {
     return this.service.stats();
   }
 
+  @Get('kds/board')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.KITCHEN)
+  @ApiOperation({
+    summary:
+      'Kitchen Display board — active orders only, sorted by estimatedReadyAt',
+  })
+  kdsBoard() {
+    return this.service.kdsBoard();
+  }
+
   @Patch(':id/status')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.KITCHEN, UserRole.DRIVER)

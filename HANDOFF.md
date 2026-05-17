@@ -182,6 +182,15 @@ packages/
 | 19 | Audit: `/menu-items?category=fake` رجع كل الـ 26 item | short-circuit `return []` لو category مش موجودة |
 | 20 | **Browser fix:** "This page couldn't load" بعد ما `.env` تم إنشاؤه بعد الـ build | `rm -rf .next && pnpm build` — Next.js bakes NEXT_PUBLIC_* at build time |
 
+**Sprint 6 — Kitchen Display System (2026-05-17):**
+- Backend: new `GET /orders/kds/board` endpoint returning active orders (PENDING/CONFIRMED/PREPARING/READY) sorted by `estimatedReadyAt` asc with nulls last. Capped at 60. Gated to ADMIN/MANAGER/KITCHEN roles.
+- Frontend (apps/admin): new `/kds` route OUTSIDE the `(protected)` route group — full-screen chrome-less view designed for kitchen tablets. Header bar has filter pills (All / New / Confirmed / Preparing / Ready), connection-status dot, audio chime toggle (Web Audio API, no audio file shipped), fullscreen button, and exit-X. Body is a responsive grid of `KdsCard`s.
+- `KdsCard` — large-typography ticket with order-number suffix, type icon, elapsed-time counter (color-shifts at 10m/20m via `ElapsedTime`), highlighted customer note block, items with quantity+name big, modifiers + per-item notes underneath. One-tap action button advances the status (PENDING→CONFIRMED→PREPARING→READY→[OUT_FOR_DELIVERY|DELIVERED]).
+- `useKdsRealtime` — dedicated hook that only joins the `kitchen` room (KITCHEN role can use it), invalidates the KDS feed on every event, fires `onNewOrder` callback for the chime.
+- `Chime` component uses `useSyncExternalStore` for the mute preference (passes the React Compiler's set-state-in-effect rule), persists to localStorage with cross-tab sync via storage events. Web Audio API two-tone sine chime — no asset shipped.
+- Sidebar gained a "Kitchen Display" link with `target="_blank"` so the kitchen tablet can keep its own window open.
+- Verified 8/8 flows + 1 deliberate skip with Puppeteer + real Chrome (no DRIVER user seeded so the negative role test is API-only via `test 7`).
+
 **Sprint 5 — Admin Dashboard (2026-05-17):**
 - Backend: `CustomersModule` (`GET /customers` + `/customers/:id` with order history), `OrdersService.stats()` exposed at `GET /orders/stats/today`, `RealtimeGateway.staff:join` (JWT-verified) for the `admin`/`kitchen` rooms. `JwtModule` wired into `RealtimeModule`.
 - Frontend (`apps/admin`): replaced the create-next-app stub with a full admin console — Modern Luxe globals, persistent staff-auth-store, `/login` page, sidebar+topbar shell with auth-gated `ProtectedShell`, `/` dashboard (4 animated KPI cards + live recent-orders table + status breakdown bar chart), `/orders` (filter pills + live table with status pulse + vaul detail drawer with status-transition workflow + history timeline), `/menu` (read-only category-grouped item grid), `/customers` (debounced search + spend/order count), `/settings` (read-only key/value table). Realtime via `useStaffRealtime` subscribes to `admin`+`kitchen` rooms and toasts on new orders + invalidates caches.
@@ -323,32 +332,36 @@ Branch: `main` — لا توجد remotes (لسه ما تم push لـ GitHub).
 - ✅ **Sprint 3** — Menu & Cart Experience
 - ✅ **Sprint 4** — Checkout & Orders (Auth + Live Tracking)
 - ✅ **Sprint 5** — Admin Dashboard (Live Orders + Status Workflow)
-- 🚀 **Sprint 6** — Kitchen Display System (KDS) (← التالي)
+- ✅ **Sprint 6** — Kitchen Display System (KDS)
+- 🚀 **Sprint 7** — Payments Integration (Paymob Sandbox) (← التالي)
 - ⏳ **Sprint 7** — Payments Integration (Paymob Sandbox)
 - ⏳ **Sprint 8** — Polish, SEO, Deploy
 
 ---
 
-## 🚀 الخطوة التالية — Sprint 6: Kitchen Display System (KDS)
+## 🚀 الخطوة التالية — Sprint 7: Payments Integration (Paymob Sandbox)
 
 ### المحتوى المخطط
 
-**Kitchen-first UI (likely in `apps/admin` as a dedicated `/kds` route، أو app منفصل):**
-- Full-screen، dark-mode، giant-typography view مخصص لشاشة المطبخ.
-- Cards per active order (PENDING/CONFIRMED/PREPARING/READY) مرتبة حسب `estimatedReadyAt`.
-- Card content: order number، items (name + size + modifiers + notes prominent)، elapsed time since order placed، allergy/customer notes highlighted.
-- One-tap actions: "Start", "Ready", "Sent" — يستخدم `PATCH /orders/:id/status` اللي موجود.
-- Live updates عبر Socket.io على room `kitchen` (الـ `staff:join` بـ token من Sprint 5 جاهز ومحمي للـ KITCHEN role).
-- Audio chime لو order جديد وصل (optional).
-- "Bumped" orders animate out.
+**Backend (apps/api):**
+- `PaymentsModule` يستهدف Paymob sandbox (test mode).
+- Flow: `POST /orders` ينشئ الـ Order ثم لو `paymentMethod=CARD` يولد iframe URL → الـ frontend يفتحها → الـ user يدفع → Paymob callback (HMAC-verified) يحدث `payment.status` لـ PAID + يدفع `order.status` لـ CONFIRMED تلقائياً.
+- Webhook endpoint: `POST /payments/webhook/paymob` (public، HMAC-verified).
+- DTOs + service + controller جديدة. `Payment.providerPayload` (Json) موجود بالفعل لتخزين response الكامل.
+- Settings: `PAYMOB_API_KEY` / `PAYMOB_INTEGRATION_ID` / `PAYMOB_IFRAME_ID` / `PAYMOB_HMAC_SECRET` (موجودين فاضيين في `.env.example` تحت "Planned" section).
 
-**Sprint 5.1 (parallel, لو الوقت سمح):**
-- Admin: Menu CRUD UI (create/edit categories + items + sizes + modifiers، toggle availability).
-- Admin: Settings editor مع allowlist + validation per key.
-- Admin: Customer detail drawer مع order history.
+**Frontend (apps/web):**
+- Checkout: لو الـ user اختار CARD → بعد placeOrder → بدل redirect لـ /order/success مباشرة، redirect لـ Paymob iframe (modal أو page).
+- Listen to postMessage from iframe لـ success/failure.
+- بعد success → poll `/orders/:id` حتى `payment.status === 'PAID'` ثم redirect لـ /order/success.
+
+**Sprint 6.1 (parallel، لو الوقت سمح):**
+- Admin: Menu CRUD UI (Sprint 5.1 still deferred).
+- Admin: Settings editor.
+- Admin: Customer detail drawer.
 
 ### قبل البدء
-1. اقرأ هذا الملف بالكامل + قسم Sprint 5 details (قسم 5).
+1. اقرأ هذا الملف بالكامل + قسم Sprint 5/6 details (قسم 5).
 2. شغّل المشروع وتأكد إن كل حاجة شغّالة (راجع قسم 6).
 3. **خذ إذن المستخدم قبل البدء** (راجع قسم 2، النقطة 1).
 

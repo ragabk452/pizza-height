@@ -469,6 +469,35 @@ export class OrdersService {
   }
 
   /**
+   * Kitchen Display feed: only orders the kitchen actively needs to work on,
+   * sorted by `estimatedReadyAt` ascending so the most-urgent ticket sits at
+   * the top of the board. We deliberately drop OUT_FOR_DELIVERY (kitchen is
+   * done with it), DELIVERED, and CANCELLED.
+   */
+  async kdsBoard() {
+    return this.prisma.order.findMany({
+      where: {
+        status: {
+          in: [
+            OrderStatus.PENDING,
+            OrderStatus.CONFIRMED,
+            OrderStatus.PREPARING,
+            OrderStatus.READY,
+          ],
+        },
+      },
+      orderBy: [
+        // Nulls last — orders without an ETA sink to the bottom rather than
+        // jump to the top of the board.
+        { estimatedReadyAt: { sort: 'asc', nulls: 'last' } },
+        { createdAt: 'asc' },
+      ],
+      take: 60,
+      include: this.fullInclude,
+    });
+  }
+
+  /**
    * Aggregate stats for the admin dashboard: today's totals + active-order
    * counts grouped by status. Cheap enough at portfolio scale that we recompute
    * on demand instead of caching.
