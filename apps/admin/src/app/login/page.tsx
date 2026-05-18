@@ -31,7 +31,7 @@ function LoginInner() {
   const redirectTo = params.get('next') || '/';
 
   const [email, setEmail] = useState('admin@pizzaheight.com');
-  const [password, setPassword] = useState('AdminPass2026!');
+  const [password, setPassword] = useState('Admin@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -165,9 +165,9 @@ function LoginInner() {
             <details className="text-muted bg-surface/40 border-border rounded-lg border px-4 py-3 text-xs">
               <summary className="cursor-pointer font-medium">Demo credentials</summary>
               <div className="mt-2 space-y-1 font-mono text-[11px]">
-                <div>admin@pizzaheight.com / AdminPass2026! (ADMIN)</div>
-                <div>manager@pizzaheight.com / AdminPass2026! (MANAGER)</div>
-                <div>kitchen@pizzaheight.com / KitchenPass2026! (KITCHEN)</div>
+                <div>admin@pizzaheight.com / Admin@2026 (ADMIN)</div>
+                <div>manager@pizzaheight.com / Admin@2026 (MANAGER)</div>
+                <div>kitchen@pizzaheight.com / Admin@2026 (KITCHEN)</div>
               </div>
             </details>
           </form>

@@ -382,9 +382,9 @@ pnpm dev   # or start each separately:
 
 ### Login credentials (للاختبار)
 **Staff:**
-- `admin@pizzaheight.com / AdminPass2026!` — Marco Rossi (ADMIN)
-- `kitchen@pizzaheight.com / KitchenPass2026!` — Giuseppe (KITCHEN)
-- `manager@pizzaheight.com / AdminPass2026!` — Sofia (MANAGER)
+- `admin@pizzaheight.com / Admin@2026` — Marco Rossi (ADMIN)
+- `kitchen@pizzaheight.com / Admin@2026` — Giuseppe (KITCHEN)
+- `manager@pizzaheight.com / Admin@2026` — Sofia (MANAGER)
 
 **Customers:**
 - `+201001112222 / DemoPass2026!` — Layla Hassan

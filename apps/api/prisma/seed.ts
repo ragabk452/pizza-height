@@ -6,7 +6,7 @@
  * - 30+ items with Unsplash images
  * - Sizes (S/M/L/XL) for pizzas
  * - Modifier groups (Crust, Extra Toppings) with modifiers
- * - 1 admin staff user (email: admin@pizzaheight.com, password: AdminPass2026!)
+ * - 1 admin staff user (email: admin@pizzaheight.com, password: Admin@2026)
  * - 3 demo customers with addresses
  * - 5 demo coupons
  * - Restaurant settings
@@ -138,8 +138,8 @@ async function main() {
   // Staff Users
   // ============================================================
   console.log('👨‍🍳 Creating staff users...');
-  const adminPassword = await bcrypt.hash('AdminPass2026!', 12);
-  const kitchenPassword = await bcrypt.hash('KitchenPass2026!', 12);
+  const adminPassword = await bcrypt.hash('Admin@2026', 12);
+  const kitchenPassword = await bcrypt.hash('Admin@2026', 12);
 
   await prisma.user.createMany({
     data: [
@@ -790,9 +790,9 @@ async function main() {
   console.log('\n✅ Seeding complete!\n');
   console.table(counts);
   console.log('\n📧 Login credentials (staff):');
-  console.log('   admin@pizzaheight.com   / AdminPass2026!');
-  console.log('   manager@pizzaheight.com / AdminPass2026!');
-  console.log('   kitchen@pizzaheight.com / KitchenPass2026!');
+  console.log('   admin@pizzaheight.com   / Admin@2026');
+  console.log('   manager@pizzaheight.com / Admin@2026');
+  console.log('   kitchen@pizzaheight.com / Admin@2026');
   console.log('\n📱 Login credentials (customers):');
   console.log('   layla@example.com / DemoPass2026!');
   console.log('   sara@example.com  / DemoPass2026!');

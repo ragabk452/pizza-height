@@ -6,7 +6,7 @@
 
 ### Try it out
 - **Customer login:** phone `+201001112222` / password `DemoPass2026!` (or `+201112223333`, `+201223334444`)
-- **Admin login:** `admin@pizzaheight.com` / `AdminPass2026!` · also `manager@…` / `kitchen@…`
+- **Admin login:** `admin@pizzaheight.com` / `Admin@2026` · also `manager@…` / `kitchen@…`
 - **Test card:** any card details work — the gateway is mock-mode (clearly disclosed on the payment page)
 
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
