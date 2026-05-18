@@ -2,7 +2,7 @@
 
 > **Elevate Your Taste** — A luxury pizza ordering platform built as a portfolio showcase.
 
-**🌐 Live demo:** [pizza-height.vercel.app](https://pizza-height.vercel.app) · **👨‍💼 Admin:** [pizza-height-admin.vercel.app](https://pizza-height-admin.vercel.app) · **⚙️ API:** [api-production-d421.up.railway.app/api/docs](https://api-production-d421.up.railway.app/api/docs)
+**🌐 Live demo:** [pizza-height.vercel.app](https://pizza-height.vercel.app) · **👨‍💼 Admin:** [pizza-height-admin.vercel.app](https://pizza-height-admin.vercel.app) · **⚙️ API:** [api-production-d421.up.railway.app/api/docs](https://api-production-d421.up.railway.app/api/docs) · **📦 Source:** [github.com/ragabk452/pizza-height](https://github.com/ragabk452/pizza-height)
 
 ### Try it out
 - **Customer login:** phone `+201001112222` / password `DemoPass2026!` (or `+201112223333`, `+201223334444`)

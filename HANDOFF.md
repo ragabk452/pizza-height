@@ -85,6 +85,7 @@ packages/
 - 🌐 Web: https://pizza-height.vercel.app
 - 👨‍💼 Admin: https://pizza-height-admin.vercel.app
 - ⚙️ API: https://api-production-d421.up.railway.app (Swagger at `/api/docs`)
+- 📦 Source: https://github.com/ragabk452/pizza-height
 
 ### ✅ Sprint 0 — Setup & Foundation
 - Turborepo monorepo (Mono-repo اختياره)
