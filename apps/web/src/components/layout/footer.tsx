@@ -1,23 +1,24 @@
+import Link from 'next/link';
 import { Send } from 'lucide-react';
 
 const footerLinks = {
   menu: [
-    { label: 'Signature Pizzas', href: '#' },
-    { label: 'Salads', href: '#' },
-    { label: 'Wines', href: '#' },
-    { label: 'Desserts', href: '#' },
+    { label: 'Signature Pizzas', href: '/menu?category=signature-pizzas' },
+    { label: 'Fresh Salads', href: '/menu?category=fresh-salads' },
+    { label: 'Italian Wines', href: '/menu?category=italian-wines' },
+    { label: 'Coffee & Desserts', href: '/menu?category=coffee-desserts' },
   ],
   company: [
-    { label: 'Our Story', href: '#' },
-    { label: 'Locations', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Press', href: '#' },
+    { label: 'Our Story', href: '/about' },
+    { label: 'Locations', href: '/locations' },
+    { label: 'Careers', href: '/contact?topic=careers' },
+    { label: 'Press', href: '/contact?topic=press' },
   ],
   support: [
-    { label: 'Contact Us', href: '#' },
-    { label: 'FAQ', href: '#' },
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
+    { label: 'Contact Us', href: '/contact' },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
   ],
 };
 
@@ -46,9 +47,9 @@ function FacebookIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const social = [
-  { Icon: InstagramIcon, href: '#', label: 'Instagram' },
-  { Icon: TwitterIcon, href: '#', label: 'Twitter' },
-  { Icon: FacebookIcon, href: '#', label: 'Facebook' },
+  { Icon: InstagramIcon, href: 'https://www.instagram.com/pizzaheight', label: 'Instagram' },
+  { Icon: TwitterIcon, href: 'https://twitter.com/pizzaheight', label: 'Twitter' },
+  { Icon: FacebookIcon, href: 'https://www.facebook.com/pizzaheight', label: 'Facebook' },
 ];
 
 export function Footer() {
@@ -96,12 +97,12 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               {footerLinks.menu.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-muted hover:text-foreground text-sm transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -112,12 +113,12 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-muted hover:text-foreground text-sm transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -128,12 +129,12 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               {footerLinks.support.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-muted hover:text-foreground text-sm transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -147,6 +148,8 @@ export function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="border-border bg-background text-muted hover:border-primary hover:bg-primary hover:text-background flex size-10 items-center justify-center rounded-full border transition-all hover:-translate-y-0.5"
                 >
                   <Icon className="size-4" />

@@ -12,9 +12,9 @@ import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/menu', label: 'Menu' },
-  { href: '/#story', label: 'Our Story' },
-  { href: '/#locations', label: 'Locations' },
-  { href: '/#contact', label: 'Contact' },
+  { href: '/about', label: 'Our Story' },
+  { href: '/locations', label: 'Locations' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export function Navbar() {

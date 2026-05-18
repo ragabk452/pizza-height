@@ -55,7 +55,7 @@ export function CTA() {
                 </Link>
               </Button>
               <Button size="xl" variant="outline" asChild>
-                <a href="#locations">Find a Location</a>
+                <Link href="/locations">Find a Location</Link>
               </Button>
             </div>
           </div>

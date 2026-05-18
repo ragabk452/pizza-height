@@ -88,10 +88,10 @@ export function Hero() {
               </Link>
             </Button>
             <Button size="xl" variant="outline" asChild>
-              <a href="#story" className="group">
+              <Link href="/about" className="group">
                 <Play className="transition-transform group-hover:scale-110" />
-                Watch Story
-              </a>
+                Our Story
+              </Link>
             </Button>
           </motion.div>
 
