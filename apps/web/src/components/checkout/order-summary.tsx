@@ -89,7 +89,7 @@ export function OrderSummary({
   }
 
   return (
-    <aside className="bg-surface/40 border-border sticky top-24 flex flex-col gap-4 rounded-2xl border p-6 backdrop-blur-md">
+    <aside className="bg-surface/40 border-border flex flex-col gap-4 rounded-2xl border p-6 backdrop-blur-md md:sticky md:top-24">
       <h3 className="font-display text-foreground text-2xl">Your order</h3>
 
       <ul className="divide-border max-h-[24rem] divide-y overflow-y-auto pr-1">

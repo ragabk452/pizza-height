@@ -79,7 +79,7 @@ export function ProfileMenu() {
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.18 }}
             role="menu"
-            className="bg-surface border-border absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border shadow-[var(--shadow-card)] backdrop-blur-md"
+            className="bg-surface border-border absolute right-0 mt-2 w-60 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border shadow-[var(--shadow-card)] backdrop-blur-md"
           >
             <div className="border-border border-b px-4 py-3">
               <p className="text-foreground text-sm font-medium">{customer.name}</p>

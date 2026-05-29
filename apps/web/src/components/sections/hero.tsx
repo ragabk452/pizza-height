@@ -157,7 +157,7 @@ export function Hero() {
           >
             <div className="from-surface-elevated via-surface to-background border-primary/20 relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-full border bg-gradient-to-br shadow-[var(--shadow-card)]">
               {/* Pizza visual placeholder */}
-              <div className="text-[8rem] leading-none select-none sm:text-[12rem] lg:text-[16rem]">
+              <div className="text-[6rem] leading-none select-none sm:text-[10rem] lg:text-[16rem]">
                 🍕
               </div>
 
@@ -170,7 +170,7 @@ export function Hero() {
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="glass absolute top-12 -left-4 rounded-2xl px-4 py-3 shadow-lg"
+            className="glass absolute top-12 left-0 rounded-2xl px-4 py-3 shadow-lg sm:-left-4"
           >
             <div className="text-muted text-xs">Wood-Fired</div>
             <div className="font-display text-primary text-lg">90s</div>
@@ -178,7 +178,7 @@ export function Hero() {
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            className="glass absolute -right-4 bottom-16 rounded-2xl px-4 py-3 shadow-lg"
+            className="glass absolute right-0 bottom-16 rounded-2xl px-4 py-3 shadow-lg sm:-right-4"
           >
             <div className="text-muted text-xs">Hand-Stretched</div>
             <div className="font-display text-primary text-lg">Daily</div>

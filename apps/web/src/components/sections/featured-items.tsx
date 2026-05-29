@@ -54,7 +54,7 @@ export function FeaturedItems() {
               <motion.div
                 key={`${item.name}-${i}`}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="group border-border bg-surface hover:border-primary/40 flex min-w-[280px] items-center gap-4 rounded-2xl border px-5 py-4 transition-colors"
+                className="group border-border bg-surface hover:border-primary/40 flex min-w-[220px] items-center gap-4 rounded-2xl border px-5 py-4 transition-colors sm:min-w-[280px]"
               >
                 <div className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-background flex size-12 shrink-0 items-center justify-center rounded-xl transition-colors">
                   <Icon className="size-5" />

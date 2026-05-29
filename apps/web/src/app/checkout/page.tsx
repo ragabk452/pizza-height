@@ -250,7 +250,7 @@ export default function CheckoutPage() {
     <>
       <Navbar />
       <main id="main-content" className="bg-mesh-gold min-h-screen pt-28 pb-16">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[1fr_22rem] lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-[1fr_20rem] md:gap-10 lg:grid-cols-[1fr_22rem] lg:px-8">
           {/* Left: stepper + step content */}
           <div>
             <Link
