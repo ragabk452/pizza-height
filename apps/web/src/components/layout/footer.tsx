@@ -164,7 +164,17 @@ export function Footer() {
           <p className="text-muted text-xs">
             © {new Date().getFullYear()} Pizza Height. All rights reserved.
           </p>
-          <p className="text-muted text-xs">Crafted with obsession in Egypt 🇪🇬</p>
+          <p className="text-muted text-xs">
+            Crafted with obsession in Egypt 🇪🇬 ·{' '}
+            <a
+              href="https://elgold-studio.vercel.app"
+              target="_blank"
+              rel="noopener"
+              className="hover:text-foreground transition-colors"
+            >
+              Elgold Studio
+            </a>
+          </p>
         </div>
       </div>
     </footer>
