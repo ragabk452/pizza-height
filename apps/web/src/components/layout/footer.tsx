@@ -167,7 +167,7 @@ export function Footer() {
           <p className="text-muted text-xs">
             Crafted with obsession in Egypt 🇪🇬 ·{' '}
             <a
-              href="https://elgold-studio.vercel.app"
+              href="https://elgold.site/work/pizza/"
               target="_blank"
               rel="noopener"
               className="hover:text-foreground transition-colors"
